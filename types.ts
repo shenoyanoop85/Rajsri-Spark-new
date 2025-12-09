@@ -20,13 +20,18 @@ export enum SubView {
   ANNOUNCEMENTS = 'ANNOUNCEMENTS',
   ANNOUNCEMENT_DETAIL = 'ANNOUNCEMENT_DETAIL',
   VOLUNTEER = 'VOLUNTEER',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  PROFILE = 'PROFILE'
 }
 
 export interface User {
   id: string;
   name: string;
   role: 'RESIDENT' | 'ADMIN';
+  avatar: string;
+  email: string;
+  phone: string;
+  unit: string;
   volunteerServices: string[];
 }
 

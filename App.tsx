@@ -2,29 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { 
   AppScreen, MainTab, SubView, NavState, Theme, Event, Announcement, User 
 } from './types';
-import { MOCK_EVENTS, MOCK_ANNOUNCEMENTS, MOCK_CONTACTS, VOLUNTEER_SERVICES, Icons } from './constants';
+import { MOCK_EVENTS, MOCK_ANNOUNCEMENTS, MOCK_CONTACTS, VOLUNTEER_SERVICES, MOCK_USER, Icons } from './constants';
 import { Header, BottomNav, ScreenContainer } from './components/Layout';
 import { Button, Card, Input, TextArea } from './components/ui.tsx';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 // --- SCREENS ---
 
-// 1. HOME SCREEN (Redesigned)
+// 1. HOME SCREEN (Redesigned with Dashboard Title in Body)
 const HomeScreen: React.FC<{ 
   nav: (tab: MainTab, sub?: SubView) => void,
   upcomingEvent: Event,
-  latestAnnouncement: Announcement
-}> = ({ nav, upcomingEvent, latestAnnouncement }) => {
+  latestAnnouncement: Announcement,
+  user: User
+}> = ({ nav, upcomingEvent, latestAnnouncement, user }) => {
   return (
     <div className="space-y-8 animate-fade-in pb-8">
-      {/* 1. Welcome Section with Weather Widget Look */}
-      <div className="flex justify-between items-center px-1">
+      {/* 1. Dashboard Title & Weather Widget */}
+      <div className="flex justify-between items-center mb-6 pt-1">
         <div>
-           <h2 className="text-3xl font-extrabold font-nunito text-slate-800 dark:text-white tracking-tight leading-tight">
-             Good Morning, <br/>
-             <span className="text-spark-green">Resident</span>
-           </h2>
+            <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white leading-tight font-nunito">Dashboard</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Overview</p>
         </div>
+
         <div className="flex flex-col items-end">
             <div className="bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 rounded-2xl px-3 py-2 flex items-center gap-2">
                 <Icons.Sun className="w-5 h-5 text-amber-400 fill-amber-400" />
@@ -36,7 +36,7 @@ const HomeScreen: React.FC<{
 
       {/* 2. Hero: Featured Event */}
       <section>
-        <div className="flex justify-between items-end mb-4 px-1">
+        <div className="flex justify-between items-end mb-4">
             <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito">Happening Soon</h3>
             <button onClick={() => nav(MainTab.EVENTS)} className="text-xs font-bold text-spark-green hover:text-spark-darkGreen transition-colors">View All</button>
         </div>
@@ -81,7 +81,7 @@ const HomeScreen: React.FC<{
 
       {/* 3. Quick Actions */}
       <section>
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 px-1 font-nunito">Quick Actions</h3>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 font-nunito">Quick Actions</h3>
         <div className="grid grid-cols-4 gap-3">
             {/* Volunteer */}
             <button onClick={() => nav(MainTab.MORE, SubView.VOLUNTEER)} className="flex flex-col items-center gap-2 group">
@@ -107,19 +107,19 @@ const HomeScreen: React.FC<{
                 <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 text-center tracking-tight">Admin</span>
             </button>
 
-            {/* More */}
-            <button onClick={() => nav(MainTab.MORE)} className="flex flex-col items-center gap-2 group">
-                <div className="w-16 h-16 rounded-[1.2rem] bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 dark:border-slate-700 group-hover:scale-110 group-hover:border-slate-300 transition-all duration-300">
-                    <Icons.More className="w-7 h-7" />
+            {/* Notices (Replacing More) */}
+            <button onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="flex flex-col items-center gap-2 group">
+                <div className="w-16 h-16 rounded-[1.2rem] bg-blue-50 dark:bg-slate-800 flex items-center justify-center text-blue-500 shadow-sm border border-blue-100 dark:border-slate-700 group-hover:scale-110 group-hover:border-blue-200 transition-all duration-300">
+                    <Icons.Megaphone className="w-7 h-7" />
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 text-center tracking-tight">More</span>
+                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 text-center tracking-tight">Notices</span>
             </button>
         </div>
       </section>
 
       {/* 4. Latest Announcement Banner - Redesigned to match Hero Card */}
       <section>
-        <div className="flex justify-between items-end mb-4 px-1">
+        <div className="flex justify-between items-end mb-4">
             <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito">Notice Board</h3>
             <button onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="text-xs font-bold text-spark-orange hover:text-orange-600 transition-colors">View All</button>
         </div>
@@ -767,14 +767,136 @@ const AdminScreen: React.FC<{ onCreateEvent: (e: Event) => void, onCreateAnnounc
     );
 };
 
-// 8. MORE SCREEN
+// 8. PROFILE SCREEN (New Stunning Profile)
+const ProfileScreen: React.FC<{ user: User, onUpdate: (u: User) => void }> = ({ user, onUpdate }) => {
+    const [formData, setFormData] = useState(user);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = () => {
+        onUpdate(formData);
+        alert('Profile Updated Successfully!');
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in pb-8">
+            {/* Header Art & Avatar */}
+            <div className="relative mb-16">
+                 <div className="h-40 w-full rounded-[2.5rem] bg-gradient-to-r from-emerald-400 to-teal-500 overflow-hidden relative shadow-lg shadow-emerald-500/20">
+                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+                 </div>
+                 
+                 <div className="absolute -bottom-14 left-1/2 -translate-x-1/2">
+                      <div className="relative group">
+                          <div className="w-28 h-28 rounded-full border-4 border-white dark:border-slate-900 p-0.5 bg-white dark:bg-slate-900 shadow-xl overflow-hidden">
+                              <img src={formData.avatar} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                          </div>
+                          <button className="absolute bottom-0 right-0 p-2 bg-spark-green text-white rounded-full border-4 border-white dark:border-slate-900 shadow-lg hover:scale-110 transition-transform">
+                              <Icons.Camera className="w-4 h-4" />
+                          </button>
+                      </div>
+                 </div>
+            </div>
+
+            <div className="text-center mb-8">
+                <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white font-nunito">{formData.name}</h2>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">Resident Member</p>
+            </div>
+
+            {/* Editable Details */}
+            <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm p-6 space-y-5">
+                 <div className="flex items-center gap-2 mb-2">
+                     <div className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-spark-green">
+                         <Icons.Edit className="w-4 h-4" />
+                     </div>
+                     <h3 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wide">Personal Details</h3>
+                 </div>
+
+                 <div className="space-y-4">
+                     <div>
+                         <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block">Full Name</label>
+                         <div className="relative">
+                             <Input 
+                                name="name" 
+                                value={formData.name} 
+                                onChange={handleChange} 
+                                className="pl-11"
+                             />
+                             <Icons.User className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                         </div>
+                     </div>
+                     
+                     <div>
+                         <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block">Email Address</label>
+                         <div className="relative">
+                             <Input 
+                                name="email" 
+                                value={formData.email} 
+                                onChange={handleChange} 
+                                className="pl-11"
+                             />
+                             <Icons.Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                         </div>
+                     </div>
+
+                     <div>
+                         <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block">Phone Number</label>
+                         <div className="relative">
+                             <Input 
+                                name="phone" 
+                                value={formData.phone} 
+                                onChange={handleChange} 
+                                className="pl-11"
+                             />
+                             <Icons.Phone className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                         </div>
+                     </div>
+
+                     <div>
+                         <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block">Apartment Unit</label>
+                         <div className="relative">
+                             <Input 
+                                name="unit" 
+                                value={formData.unit} 
+                                onChange={handleChange} 
+                                className="pl-11"
+                             />
+                             <Icons.Building className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                         </div>
+                     </div>
+                 </div>
+
+                 <Button fullWidth onClick={handleSubmit} className="mt-4">Update Profile</Button>
+            </div>
+        </div>
+    );
+};
+
+// 9. MORE SCREEN
 const MoreScreen: React.FC<{ nav: (sub: SubView) => void }> = ({ nav }) => {
     return (
         <div className="space-y-4 animate-fade-in">
+             {/* Notices Button (New) - Blue */}
+             <button onClick={() => nav(SubView.ANNOUNCEMENTS)} className="w-full flex items-center justify-between p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 group">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-500 border border-blue-100 dark:border-blue-900/30">
+                        <Icons.Megaphone className="w-6 h-6" />
+                    </div>
+                    <div className="text-left">
+                        <h3 className="font-bold text-slate-800 dark:text-white text-lg">Community Notices</h3>
+                        <p className="text-slate-500 text-sm">Latest updates & alerts</p>
+                    </div>
+                </div>
+                <Icons.ChevronLeft className="w-5 h-5 text-slate-400 rotate-180 group-hover:translate-x-1 transition-transform" />
+             </button>
+
+             {/* Volunteer Button - Orange (Synced with Dashboard) */}
              <button onClick={() => nav(SubView.VOLUNTEER)} className="w-full flex items-center justify-between p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 group">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-indigo-600 dark:text-indigo-400">
-                        <Icons.User className="w-6 h-6" />
+                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl text-spark-orange border border-orange-100 dark:border-orange-900/30">
+                        <Icons.Heart className="w-6 h-6" />
                     </div>
                     <div className="text-left">
                         <h3 className="font-bold text-slate-800 dark:text-white text-lg">Volunteer Profile</h3>
@@ -784,9 +906,10 @@ const MoreScreen: React.FC<{ nav: (sub: SubView) => void }> = ({ nav }) => {
                 <Icons.ChevronLeft className="w-5 h-5 text-slate-400 rotate-180 group-hover:translate-x-1 transition-transform" />
              </button>
 
+             {/* Admin Button - Indigo (Synced with Dashboard) */}
              <button onClick={() => nav(SubView.ADMIN)} className="w-full flex items-center justify-between p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 group">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-xl text-slate-600 dark:text-slate-300">
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-indigo-500 border border-indigo-100 dark:border-indigo-900/30">
                         <Icons.Settings className="w-6 h-6" />
                     </div>
                     <div className="text-left">
@@ -813,6 +936,7 @@ export default function App() {
   // Data State
   const [events, setEvents] = useState<Event[]>(MOCK_EVENTS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(MOCK_ANNOUNCEMENTS);
+  const [currentUser, setCurrentUser] = useState<User>(MOCK_USER);
 
   useEffect(() => {
     // Splash Screen Timer
@@ -852,6 +976,11 @@ export default function App() {
     setNavState(prev => ({ ...prev, currentSubView: SubView.NONE, selectedId: undefined }));
   };
 
+  const handleUserUpdate = (updatedUser: User) => {
+      setCurrentUser(updatedUser);
+      // Ideally call API here
+  };
+
   // Render Content based on state
   const renderContent = () => {
     // 1. Overlay Views (Full Screen feel)
@@ -867,6 +996,9 @@ export default function App() {
        if (announcement) return <AnnouncementDetailScreen announcement={announcement} />;
     }
     if (navState.currentSubView === SubView.VOLUNTEER) return <VolunteerScreen />;
+    if (navState.currentSubView === SubView.PROFILE) {
+        return <ProfileScreen user={currentUser} onUpdate={handleUserUpdate} />;
+    }
     if (navState.currentSubView === SubView.ADMIN) {
         return <AdminScreen 
             onCreateEvent={(e) => setEvents(prev => [e, ...prev])} 
@@ -877,7 +1009,7 @@ export default function App() {
     // 2. Tab Views
     switch (navState.currentTab) {
       case MainTab.HOME:
-        return <HomeScreen nav={handleNav} upcomingEvent={events[0]} latestAnnouncement={announcements[0]} />;
+        return <HomeScreen nav={handleNav} upcomingEvent={events[0]} latestAnnouncement={announcements[0]} user={currentUser} />;
       case MainTab.EVENTS:
         return <EventsScreen events={events} onSelect={handleEventSelect} />;
       case MainTab.EMERGENCY:
@@ -925,9 +1057,10 @@ export default function App() {
     );
   }
 
-  // Calculate Header Title
+  // Calculate Header Title & Custom Content
   let title = "Rajsri SPARK";
   let showBack = false;
+  let headerCustomTitle: React.ReactNode | undefined;
 
   if (navState.currentSubView !== SubView.NONE) {
     showBack = true;
@@ -936,11 +1069,34 @@ export default function App() {
         case SubView.ANNOUNCEMENTS: title = "Announcements"; break;
         case SubView.ANNOUNCEMENT_DETAIL: title = "Notice Details"; break;
         case SubView.VOLUNTEER: title = "Volunteer Profile"; break;
+        case SubView.PROFILE: title = "My Profile"; break;
         case SubView.ADMIN: title = "Admin Panel"; break;
     }
   } else {
     switch(navState.currentTab) {
-        case MainTab.HOME: title = "Dashboard"; break;
+        case MainTab.HOME:
+            // Custom Profile in Header for Home Screen
+            headerCustomTitle = (
+                <div 
+                    className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 dark:hover:bg-slate-800/50 py-1 px-2 -ml-2 rounded-xl transition-colors"
+                    onClick={() => handleNav(MainTab.HOME, SubView.PROFILE)}
+                >
+                    <div className="relative">
+                        <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 p-0.5 bg-white dark:bg-slate-800">
+                            <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full rounded-full object-cover" />
+                        </div>
+                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-spark-green border-2 border-white dark:border-slate-800 rounded-full"></div>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider leading-none mb-0.5">Good Morning</p>
+                        <h2 className="text-sm font-extrabold text-slate-800 dark:text-white leading-none group-hover:text-spark-green transition-colors">
+                            {currentUser.name.split(' ')[0]}
+                        </h2>
+                    </div>
+                </div>
+            );
+            title = ""; // Ignored
+            break;
         case MainTab.EVENTS: title = "Community Events"; break;
         case MainTab.EMERGENCY: title = "Emergency Directory"; break;
         case MainTab.MORE: title = "More"; break;
@@ -955,6 +1111,7 @@ export default function App() {
         toggleTheme={toggleTheme} 
         showBack={showBack}
         onBack={handleBack}
+        customTitle={headerCustomTitle}
       />
       
       <ScreenContainer>
