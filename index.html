@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Rajsri SPARK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              spark: {
+                green: '#10B981', // Emerald 500
+                darkGreen: '#047857', // Emerald 700
+                orange: '#F97316', // Orange 500
+                light: '#F8FAFC', // Slate 50
+                dark: '#0F172A', // Slate 900
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'Nunito', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'Nunito', sans-serif;
+      }
+      /* Hide scrollbar for clean UI */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.5.1"
+  }
+}
+</script>
+</head>
+  <body class="bg-spark-light dark:bg-spark-dark text-slate-800 dark:text-slate-100 transition-colors duration-200">
+    <div id="root"></div>
+  </body>
+</html>
