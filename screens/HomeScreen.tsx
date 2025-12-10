@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MainTab, SubView } from '../types';
 import { Icons } from '../constants';
 import { useNav, useData, useUser, useTheme } from '../context';
@@ -10,7 +10,27 @@ export const HomeScreen: React.FC = () => {
   const { events, announcements, settings } = useData();
   const { theme, toggleTheme } = useTheme();
 
-  const upcomingEvent = events[0];
+  // Logic: High Priority first, then closest Upcoming Date
+  const upcomingEvent = useMemo(() => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // 1. Filter for future/today events only
+      const futureEvents = events.filter(e => new Date(e.date) >= today);
+
+      if (futureEvents.length === 0) return null;
+
+      // 2. Sort
+      return [...futureEvents].sort((a, b) => {
+          // Priority: High Priority comes first (-1)
+          if (a.isHighPriority && !b.isHighPriority) return -1;
+          if (!a.isHighPriority && b.isHighPriority) return 1;
+          
+          // Date: Ascending (Closest date first)
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+      })[0];
+  }, [events]);
+
   const latestAnnouncement = announcements[0];
   
   // Use setting if available, else fallback
