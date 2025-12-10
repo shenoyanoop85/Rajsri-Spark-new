@@ -1,3 +1,4 @@
+
 export type Theme = 'light' | 'dark';
 
 export enum AppScreen {
@@ -35,7 +36,7 @@ export interface User {
   volunteerServices: string[];
 }
 
-export interface Event {
+export interface AppEvent {
   id: string;
   title: string;
   date: string; // ISO Date string

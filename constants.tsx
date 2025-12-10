@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Event, Announcement, EmergencyContact, User } from './types';
+import { AppEvent, Announcement, EmergencyContact, User } from './types';
 
 // --- ICONS (Inline SVG for self-containment) ---
 export const Icons = {
@@ -92,7 +93,7 @@ export const VOLUNTEER_SERVICES = [
   "Cleaning Crew"
 ];
 
-export const MOCK_EVENTS: Event[] = [
+export const MOCK_EVENTS: AppEvent[] = [
   {
     id: 'e1',
     title: 'Annual Diwali Gala',

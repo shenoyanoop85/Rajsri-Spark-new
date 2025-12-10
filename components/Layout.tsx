@@ -1,39 +1,64 @@
+
 import React from 'react';
 import { MainTab, Theme } from '../types';
 import { Icons } from '../constants';
 
-interface HeaderProps {
-  title: string;
+interface TopBarProps {
+  title?: string;
   theme: Theme;
   toggleTheme: () => void;
   showBack?: boolean;
   onBack?: () => void;
   customTitle?: React.ReactNode;
+  transparent?: boolean;
+  rightAction?: React.ReactNode;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, theme, toggleTheme, showBack, onBack, customTitle }) => {
+export const TopBar: React.FC<TopBarProps> = ({ 
+  title, theme, toggleTheme, showBack, onBack, customTitle, transparent = false, rightAction 
+}) => {
+  const baseClasses = "sticky top-0 z-40 w-full transition-all duration-200";
+  const bgClasses = transparent 
+    ? "bg-transparent" 
+    : "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800";
+    
+  const textClasses = transparent
+    ? "text-white"
+    : "text-slate-800 dark:text-white";
+    
+  const iconClasses = transparent
+    ? "text-white"
+    : "text-slate-700 dark:text-slate-200";
+
+  const buttonBgClasses = transparent
+    ? "bg-white/20 hover:bg-white/30 text-white backdrop-blur-md"
+    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400 hover:bg-slate-200 dark:hover:bg-slate-700";
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 transition-colors duration-200">
+    <header className={`${baseClasses} ${bgClasses}`}>
       <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto min-h-[60px]">
         <div className="flex items-center gap-2 flex-1">
             {showBack && (
-                <button onClick={onBack} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors -ml-2 mr-1">
-                    <Icons.ChevronLeft className="w-6 h-6 text-slate-700 dark:text-slate-200" />
+                <button onClick={onBack} className={`p-1 rounded-full transition-colors -ml-2 mr-1 ${transparent ? 'hover:bg-white/20' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+                    <Icons.ChevronLeft className={`w-6 h-6 ${iconClasses}`} />
                 </button>
             )}
             {customTitle ? (
               customTitle
             ) : (
-              <h1 className="text-xl font-bold font-nunito text-slate-800 dark:text-white tracking-tight">{title}</h1>
+              title && <h1 className={`text-xl font-bold font-nunito tracking-tight ${textClasses}`}>{title}</h1>
             )}
         </div>
-        <button 
-          onClick={toggleTheme} 
-          className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ml-2"
-          aria-label="Toggle Theme"
-        >
-          {theme === 'light' ? <Icons.Moon className="w-5 h-5" /> : <Icons.Sun className="w-5 h-5" />}
-        </button>
+        <div className="flex items-center gap-2">
+            {rightAction}
+            <button 
+              onClick={toggleTheme} 
+              className={`p-2 rounded-full transition-colors ${buttonBgClasses}`}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'light' ? <Icons.Moon className="w-5 h-5" /> : <Icons.Sun className="w-5 h-5" />}
+            </button>
+        </div>
       </div>
     </header>
   );
