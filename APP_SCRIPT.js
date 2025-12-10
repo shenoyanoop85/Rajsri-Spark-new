@@ -9,15 +9,12 @@ function doPost(e) {
   const data = JSON.parse(e.postData.contents);
   const action = data.action;
 
-  // 1. LOGIN USER (Exact Match on Phone)
+  // 1. LOGIN USER
   if (action === 'login') {
     const sheet = ss.getSheetByName('Profiles');
     const rows = sheet.getDataRange().getValues();
-    // Assuming Column F (Index 5) is Phone.
-    // Clean phone input just in case
     const inputPhone = String(data.phone).replace(/\D/g,'');
     
-    // Skip header row
     const userRow = rows.slice(1).find(r => String(r[5]).replace(/\D/g,'') === inputPhone);
     
     if (userRow) {
@@ -37,56 +34,79 @@ function doPost(e) {
     }
   }
 
-  // 2. SEARCH USERS (Admin Search)
+  // 2. GET USER ACTIVITY (Registrations & Acknowledgements)
+  if (action === 'get_user_activity') {
+    const userId = data.userId;
+    
+    // Fetch Registrations
+    const regSheet = ss.getSheetByName('Registrations');
+    let joinedEvents = [];
+    if (regSheet) {
+       const rows = regSheet.getDataRange().getValues();
+       // Assuming Col 1 (Index 1) is EventID, Col 2 (Index 2) is UserID
+       joinedEvents = rows.slice(1)
+         .filter(r => r[2] == userId)
+         .map(r => r[1]);
+    }
+
+    // Fetch Acknowledgements
+    const ackSheet = ss.getSheetByName('Acknowledgements');
+    let ackNotices = [];
+    if (ackSheet) {
+       const rows = ackSheet.getDataRange().getValues();
+       // Assuming Col 1 (Index 1) is NoticeID, Col 2 (Index 2) is UserID
+       ackNotices = rows.slice(1)
+         .filter(r => r[2] == userId)
+         .map(r => r[1]);
+    }
+
+    return response({ joinedEvents, ackNotices });
+  }
+
+  // 3. SEARCH USERS
   if (action === 'search_users') {
     const sheet = ss.getSheetByName('Profiles');
     const rows = sheet.getDataRange().getValues();
     const query = data.query ? data.query.toString().toLowerCase() : '';
-    const headers = rows.shift(); // Remove header
 
-    // Search Name (1), Phone (5), or Unit (6)
-    // Limit to 20 results to keep it fast
-    const matches = rows.filter(r => 
+    const matches = rows.slice(1).filter(r => 
       String(r[1]).toLowerCase().includes(query) || 
       String(r[5]).includes(query) || 
       String(r[6]).toLowerCase().includes(query)
     ).slice(0, 20);
 
-    const profiles = matches.map(row => {
-      // Map back to object manually
-      return {
-        id: row[0],
-        name: row[1],
-        role: row[2],
-        avatar: row[3],
-        email: row[4],
-        phone: row[5],
-        unit: row[6],
-        volunteer_services: row[7] ? String(row[7]).split(',') : []
-      };
-    });
+    const profiles = matches.map(row => ({
+      id: row[0], name: row[1], role: row[2], avatar: row[3],
+      email: row[4], phone: row[5], unit: row[6],
+      volunteer_services: row[7] ? String(row[7]).split(',') : []
+    }));
 
     return response({ profiles: profiles });
   }
   
-  // 3. GET PUBLIC DATA (Events, Notices & SETTINGS)
+  // 4. GET PUBLIC DATA
   if (action === 'get_public_data') {
     return response({
       events: getSheetData(ss.getSheetByName('Events')),
       announcements: getSheetData(ss.getSheetByName('Announcements')),
-      settings: getSheetData(ss.getSheetByName('Settings')), // NEW: Fetch settings
+      settings: getSheetData(ss.getSheetByName('Settings')),
     });
   }
 
-  // 4. ADD ITEM
+  // 5. GENERIC ADD/UPDATE/DELETE
   if (action === 'add_item') {
-    const tab = ss.getSheetByName(data.sheetName);
-    if (!tab) return response({status: 'error', message: 'Sheet not found'});
+    let tab = ss.getSheetByName(data.sheetName);
+    if (!tab) {
+       // Auto-create sheet if missing (Useful for new features like Registrations)
+       tab = ss.insertSheet(data.sheetName);
+       // Add simple header if new
+       if(data.sheetName === 'Registrations') tab.appendRow(['ID', 'EventID', 'UserID', 'UserName', 'Timestamp']);
+       if(data.sheetName === 'Acknowledgements') tab.appendRow(['ID', 'NoticeID', 'UserID', 'UserName', 'Timestamp']);
+    }
     tab.appendRow(data.row);
     return response({ status: 'success' });
   }
 
-  // 5. UPDATE ITEM
   if (action === 'update_item') {
     const tab = ss.getSheetByName(data.sheetName);
     const id = data.id;
@@ -102,7 +122,6 @@ function doPost(e) {
     return response({ status: 'error', message: 'ID not found' });
   }
 
-  // 6. DELETE ITEM
   if (action === 'delete_item') {
     const tab = ss.getSheetByName(data.sheetName);
     const id = data.id;
@@ -128,14 +147,12 @@ function getSheetData(sheet) {
   return rows.map(row => {
     let obj = {};
     headers.forEach((h, i) => {
-      // Handle list fields
       if ((h === 'requirements' || h === 'benefits' || h === 'volunteer_services') && typeof row[i] === 'string') {
         obj[h] = row[i].split(',').map(s => s.trim()).filter(s => s);
       } else {
         obj[h] = row[i];
       }
     });
-    // Normalization to CamelCase for frontend
     if (obj.image_url) obj.imageUrl = obj.image_url;
     if (obj.is_high_priority !== undefined) obj.isHighPriority = obj.is_high_priority;
     if (obj.registered_count !== undefined) obj.registeredCount = obj.registered_count;

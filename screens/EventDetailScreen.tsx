@@ -5,7 +5,7 @@ import { useNav, useData, useTheme, useToast } from '../context';
 import { Button } from '../components/ui.tsx';
 
 export const EventDetailScreen: React.FC = () => {
-  const { events } = useData();
+  const { events, joinedEvents, joinEvent } = useData();
   const { navState, goBack } = useNav();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -23,11 +23,19 @@ export const EventDetailScreen: React.FC = () => {
 
   const percentFull = Math.round((event.registeredCount / event.capacity) * 100);
   const isSoldOut = percentFull >= 100;
+  const isJoined = joinedEvents.includes(event.id);
 
   // Booking Dock Logic
   const getButtonText = () => {
+      if (isJoined) return "Registered";
       if (isSoldOut) return "Sold Out";
       return "Join Event";
+  };
+  
+  const getButtonState = () => {
+      if (isJoined) return "bg-white border-2 border-emerald-500 text-emerald-600 shadow-none";
+      if (isSoldOut) return "bg-slate-300 dark:bg-slate-700 cursor-not-allowed";
+      return "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-emerald-500/30 text-white";
   };
   
   const buttonClass = isScrolled 
@@ -64,7 +72,7 @@ export const EventDetailScreen: React.FC = () => {
              </div>
         </div>
 
-        {/* Stats Grid - overlapping slightly if desired, or just below */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-3 px-4 -mt-12 relative z-10 mb-8">
              <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center shadow-lg">
                  <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-full text-spark-green mb-1"><Icons.Calendar className="w-4 h-4" /></div>
@@ -144,10 +152,11 @@ export const EventDetailScreen: React.FC = () => {
                 <Button 
                     fullWidth 
                     size="lg" 
-                    disabled={isSoldOut}
-                    className={`shadow-xl rounded-2xl text-lg font-bold ${isSoldOut ? 'bg-slate-300 dark:bg-slate-700' : 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-emerald-500/30'}`} 
-                    onClick={() => showToast('Successfully Registered! Check email.', 'success')}
+                    disabled={isSoldOut || isJoined}
+                    className={`shadow-xl rounded-2xl text-lg font-bold flex items-center justify-center gap-2 ${getButtonState()}`} 
+                    onClick={() => joinEvent(event.id)}
                 >
+                    {isJoined && <Icons.Check className="w-5 h-5" />}
                     {getButtonText()}
                 </Button>
             </div>

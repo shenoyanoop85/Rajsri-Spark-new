@@ -2,11 +2,6 @@
 // ------------------------------------------------------------------
 // CONFIGURATION: YOUR GOOGLE APPS SCRIPT WEB APP URL
 // ------------------------------------------------------------------
-// IMPORTANT: 
-// 1. Deploy your script as "Web App"
-// 2. Set "Execute as" -> "Me"
-// 3. Set "Who has access" -> "Anyone"
-// 4. Paste the URL below
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIXnFk-zBluWxa10s0PUM3fEiqCHPQSEwu-aQWN08LSBH34az_UMQ5KFP2MNHkh1FHxQ/exec'; 
 
 // Helper to handle fetch and parsing
@@ -16,8 +11,6 @@ const fetchJson = async (payload: any) => {
     }
     
     try {
-        // We use 'text/plain' to avoid CORS Preflight (OPTIONS) requests which GAS often fails on.
-        // The script's JSON.parse(e.postData.contents) handles this format perfectly.
         const response = await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             headers: {
@@ -32,7 +25,6 @@ const fetchJson = async (payload: any) => {
 
         const text = await response.text();
         
-        // Handle HTML error responses (common with Google Script errors)
         if (text.trim().startsWith('<')) {
              console.error("Server returned HTML instead of JSON:", text);
              throw new Error("Server returned an invalid response. Check Script permissions.");
@@ -46,12 +38,12 @@ const fetchJson = async (payload: any) => {
 };
 
 export const sheetApi = {
-    // 1. PUBLIC DATA: Only fetch Events and Announcements
+    // 1. PUBLIC DATA
     getPublicData: async () => {
         return await fetchJson({ action: 'get_public_data' });
     },
 
-    // 2. LOGIN: Search for 1 user on the server side
+    // 2. LOGIN
     loginUser: async (mobile: string) => {
         return await fetchJson({ 
             action: 'login',
@@ -59,7 +51,15 @@ export const sheetApi = {
         });
     },
 
-    // 3. ADMIN SEARCH: Search users server-side
+    // 3. GET ACTIVITY
+    getUserActivity: async (userId: string) => {
+        return await fetchJson({
+            action: 'get_user_activity',
+            userId: userId
+        });
+    },
+
+    // 4. ADMIN SEARCH
     searchUsers: async (query: string) => {
         if (!GOOGLE_SCRIPT_URL) return { profiles: [] };
         return await fetchJson({ 
@@ -68,7 +68,7 @@ export const sheetApi = {
         });
     },
 
-    // 4. ADD ITEM
+    // 5. GENERIC CRUD
     addItem: async (sheetName: string, row: any[]) => {
         if (!GOOGLE_SCRIPT_URL) return; 
         return await fetchJson({ 
@@ -78,7 +78,6 @@ export const sheetApi = {
         });
     },
 
-    // 5. UPDATE ITEM
     updateItem: async (sheetName: string, id: string, row: any[]) => {
         if (!GOOGLE_SCRIPT_URL) return;
         return await fetchJson({
@@ -89,7 +88,6 @@ export const sheetApi = {
         });
     },
 
-    // 6. DELETE ITEM
     deleteItem: async (sheetName: string, id: string) => {
         if (!GOOGLE_SCRIPT_URL) return;
         return await fetchJson({

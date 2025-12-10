@@ -37,21 +37,28 @@ export const useToast = () => {
 interface DataContextType {
   events: AppEvent[];
   announcements: Announcement[];
-  settings: Record<string, string>; // NEW: Store app settings like images
+  settings: Record<string, string>; 
   loading: boolean;
+  // User Interaction Data
+  joinedEvents: string[]; // List of IDs
+  acknowledgedNotices: string[]; // List of IDs
   refreshData: () => Promise<void>;
+  
+  // Actions
+  joinEvent: (eventId: string) => Promise<void>;
+  acknowledgeNotice: (noticeId: string) => Promise<void>;
+
+  // Admin Actions
   addEvent: (e: Partial<AppEvent>) => Promise<void>;
   updateEvent: (e: AppEvent) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
   addAnnouncement: (a: Partial<Announcement>) => Promise<void>;
   updateAnnouncement: (a: Announcement) => Promise<void>;
   deleteAnnouncement: (id: string) => Promise<void>;
-  // User Management
   searchUsers: (query: string) => Promise<User[]>; 
   addUser: (u: Partial<User>) => Promise<void>;
   editUser: (u: User) => Promise<void>;
   removeUser: (id: string) => Promise<void>;
-  // Settings Management
   updateSetting: (key: string, value: string) => Promise<void>;
 }
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -120,13 +127,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => removeToast(id), 3000);
   }, [removeToast]);
 
-  // --- GOOGLE SHEETS DATA LOGIC ---
+  // --- DATA LOGIC ---
   const [events, setEvents] = useState<AppEvent[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loadingData, setLoadingData] = useState(true);
+  
+  // User Activity State
+  const [joinedEvents, setJoinedEvents] = useState<string[]>([]);
+  const [acknowledgedNotices, setAcknowledgedNotices] = useState<string[]>([]);
 
-  // Helper to map raw sheet row to User object
+  // Auth State
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(false); 
+
   const mapToUser = (raw: any): User => ({
       id: raw.id || `u_${Math.random()}`,
       name: raw.name || 'Unknown',
@@ -140,28 +154,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshData = async () => {
     setLoadingData(true);
-    
     try {
         const data = await sheetApi.getPublicData();
-        
-        // Events
         if (data.events && Array.isArray(data.events)) setEvents(data.events);
         else setEvents([]);
-
-        // Announcements
         if (data.announcements && Array.isArray(data.announcements)) setAnnouncements(data.announcements);
         else setAnnouncements([]);
-
-        // Settings (NEW)
         if (data.settings && Array.isArray(data.settings)) {
             const settingsMap = data.settings.reduce((acc: any, item: any) => {
-                // Assuming sheet has columns 'key' and 'value'
                 if(item.key) acc[item.key] = item.value;
                 return acc;
             }, {});
             setSettings(settingsMap);
         }
-
     } catch (error) {
         console.warn("API Connection Error:", error);
         showToast("Connection Failed: Using Demo Data", "error");
@@ -171,21 +176,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLoadingData(false);
     }
   };
+  
+  // Fetch specific user activity when user logs in
+  const fetchUserActivity = async (userId: string) => {
+      try {
+          const activity = await sheetApi.getUserActivity(userId);
+          if (activity) {
+              setJoinedEvents(activity.joinedEvents || []);
+              setAcknowledgedNotices(activity.ackNotices || []);
+          }
+      } catch (e) {
+          console.error("Failed to fetch user activity", e);
+      }
+  };
 
-  // Initial Load
   useEffect(() => {
     refreshData();
   }, []);
 
-  // --- SETTINGS ACTIONS ---
-  const updateSetting = async (key: string, value: string) => {
+  // --- USER ACTIONS ---
+  
+  const joinEvent = async (eventId: string) => {
+      if (!user) return showToast("Please login first", "error");
+      if (joinedEvents.includes(eventId)) return;
+
       // Optimistic Update
-      setSettings(prev => ({ ...prev, [key]: value }));
+      setJoinedEvents(prev => [...prev, eventId]);
+      
+      const targetEvent = events.find(e => e.id === eventId);
+      if (targetEvent) {
+          // Increment locally
+          const updatedEvent = { ...targetEvent, registeredCount: (targetEvent.registeredCount || 0) + 1 };
+          setEvents(prev => prev.map(e => e.id === eventId ? updatedEvent : e));
+          
+          try {
+             // 1. Add to Registrations Sheet
+             const regId = `r_${Date.now()}`;
+             await sheetApi.addItem('Registrations', [regId, eventId, user.id, user.name, new Date().toISOString()]);
+             
+             // 2. Update Event Count in Events Sheet
+             // We reuse the updateEvent logic basically
+             const row = [
+                updatedEvent.id, updatedEvent.title, updatedEvent.date, updatedEvent.time, 
+                updatedEvent.location, updatedEvent.imageUrl, updatedEvent.description, 
+                updatedEvent.type, updatedEvent.isHighPriority, 
+                (updatedEvent.requirements || []).join(','), 
+                (updatedEvent.benefits || []).join(','), 
+                updatedEvent.capacity, updatedEvent.registeredCount
+             ];
+             await sheetApi.updateItem('Events', updatedEvent.id, row);
+             
+             showToast("Successfully Registered!", "success");
+          } catch (e) {
+             console.error(e);
+             showToast("Saved locally. Sync failed.", "info");
+          }
+      }
+  };
+
+  const acknowledgeNotice = async (noticeId: string) => {
+      if (!user) return;
+      if (acknowledgedNotices.includes(noticeId)) return;
+
+      setAcknowledgedNotices(prev => [...prev, noticeId]);
       
       try {
-          // If key exists in current settings, update it. If not, add it.
-          // Note: This relies on the local state being accurate.
-          // 'Settings' sheet is expected to have 'key' as the first column (ID).
+         const ackId = `ack_${Date.now()}`;
+         await sheetApi.addItem('Acknowledgements', [ackId, noticeId, user.id, user.name, new Date().toISOString()]);
+         showToast("Notice Acknowledged", "success");
+      } catch (e) {
+         showToast("Acknowledged locally.", "info");
+      }
+  };
+
+  // --- ADMIN ACTIONS ---
+  const updateSetting = async (key: string, value: string) => {
+      setSettings(prev => ({ ...prev, [key]: value }));
+      try {
           if (settings[key] !== undefined) {
              await sheetApi.updateItem('Settings', key, [key, value]);
           } else {
@@ -193,12 +260,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
           showToast("Setting updated!", "success");
       } catch (e) {
-          console.error(e);
-          showToast("Failed to save setting to cloud.", "info");
+          showToast("Failed to save setting.", "info");
       }
   };
 
-  // --- EVENT ACTIONS ---
   const addEvent = async (e: Partial<AppEvent>) => {
     try {
         const newEvent = { ...e, id: `e${Date.now()}`, registeredCount: 0 };
@@ -212,10 +277,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             newEvent.capacity, newEvent.registeredCount
         ];
         await sheetApi.addItem('Events', row);
-        showToast("Event saved to Sheet!", "success");
-    } catch (err) {
-        showToast("Demo Mode: Event saved locally.", "info");
-    }
+        showToast("Event saved!", "success");
+    } catch (err) { showToast("Demo: Event saved locally.", "info"); }
   };
 
   const updateEvent = async (e: AppEvent) => {
@@ -230,23 +293,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             e.capacity, e.registeredCount
         ];
         await sheetApi.updateItem('Events', e.id, row);
-        showToast("Event updated in Sheet!", "success");
-    } catch (err) {
-        showToast("Updated locally. Sheet sync failed.", "info");
-    }
+        showToast("Event updated!", "success");
+    } catch (err) { showToast("Updated locally.", "info"); }
   };
 
   const deleteEvent = async (id: string) => {
     try {
         setEvents(prev => prev.filter(e => e.id !== id));
         await sheetApi.deleteItem('Events', id);
-        showToast("Event deleted from Sheet!", "success");
-    } catch (e) {
-        showToast("Deleted locally. Sheet sync failed.", "info");
-    }
+        showToast("Event deleted!", "success");
+    } catch (e) { showToast("Deleted locally.", "info"); }
   };
 
-  // --- ANNOUNCEMENT ACTIONS ---
   const addAnnouncement = async (a: Partial<Announcement>) => {
     try {
         const newAnn = { ...a, id: `a${Date.now()}`, date: new Date().toISOString() };
@@ -256,10 +314,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             newAnn.date, newAnn.imageUrl, newAnn.validFrom || '', newAnn.validTo || ''
         ];
         await sheetApi.addItem('Announcements', row);
-        showToast("Notice saved to Sheet!", "success");
-    } catch (err) {
-        showToast("Demo Mode: Notice saved locally.", "info");
-    }
+        showToast("Notice saved!", "success");
+    } catch (err) { showToast("Demo: Notice saved locally.", "info"); }
   };
 
   const updateAnnouncement = async (a: Announcement) => {
@@ -270,103 +326,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             a.date, a.imageUrl, a.validFrom || '', a.validTo || ''
         ];
         await sheetApi.updateItem('Announcements', a.id, row);
-        showToast("Notice updated in Sheet!", "success");
-    } catch (err) {
-        showToast("Updated locally. Sheet sync failed.", "info");
-    }
+        showToast("Notice updated!", "success");
+    } catch (err) { showToast("Updated locally.", "info"); }
   };
 
   const deleteAnnouncement = async (id: string) => {
     try {
         setAnnouncements(prev => prev.filter(a => a.id !== id));
         await sheetApi.deleteItem('Announcements', id);
-        showToast("Deleted from Sheet!", "success");
-    } catch (e) {
-        showToast("Deleted locally. Sheet sync failed.", "info");
-    }
+        showToast("Deleted!", "success");
+    } catch (e) { showToast("Deleted locally.", "info"); }
   };
 
-  // --- USER MANAGEMENT ACTIONS (ADMIN) ---
   const searchUsers = async (query: string): Promise<User[]> => {
       try {
           const result = await sheetApi.searchUsers(query);
-          if (result && result.profiles) {
-              return result.profiles.map(mapToUser);
-          }
+          if (result && result.profiles) return result.profiles.map(mapToUser);
           return [];
-      } catch (e) {
-          console.error("Search failed", e);
-          return [];
-      }
+      } catch (e) { return []; }
   };
 
   const addUser = async (u: Partial<User>) => {
       try {
-          const newUser = { 
-              ...u, 
-              id: `u${Date.now()}`, 
-              avatar: u.avatar || 'https://i.pravatar.cc/300',
-              volunteerServices: [] 
-          } as User;
-          
-          // Map to Sheet Columns: id, name, role, avatar, email, phone, unit, volunteer_services
-          const row = [
-              newUser.id, newUser.name, newUser.role, newUser.avatar, 
-              newUser.email, newUser.phone, newUser.unit, ''
-          ];
-          
+          const newUser = { ...u, id: `u${Date.now()}`, avatar: u.avatar || 'https://i.pravatar.cc/300', volunteerServices: [] } as User;
+          const row = [newUser.id, newUser.name, newUser.role, newUser.avatar, newUser.email, newUser.phone, newUser.unit, ''];
           await sheetApi.addItem('Profiles', row);
-          showToast("User added to Sheet!", "success");
-      } catch (e) {
-          showToast("Demo Mode: User added locally.", "info");
-      }
+          showToast("User added!", "success");
+      } catch (e) { showToast("Demo: User added locally.", "info"); }
   };
 
   const editUser = async (u: User) => {
       try {
-          // Fix: Ensure we don't wipe volunteer services
           const volServices = u.volunteerServices ? u.volunteerServices.join(',') : '';
-          
-          // Map to Sheet Columns (SAME ORDER as addUser)
-          const row = [
-              u.id, u.name, u.role, u.avatar, 
-              u.email, u.phone, u.unit, volServices
-          ];
+          const row = [u.id, u.name, u.role, u.avatar, u.email, u.phone, u.unit, volServices];
           await sheetApi.updateItem('Profiles', u.id, row);
-          showToast("User updated in Sheet!", "success");
-      } catch (e) {
-          showToast("Updated locally. Sheet sync failed.", "info");
-      }
+          showToast("User updated!", "success");
+      } catch (e) { showToast("Updated locally.", "info"); }
   };
 
   const removeUser = async (id: string) => {
       try {
           await sheetApi.deleteItem('Profiles', id);
-          showToast("User deleted from Sheet!", "success");
-      } catch (e) {
-          showToast("User deleted locally.", "info");
-      }
+          showToast("User deleted!", "success");
+      } catch (e) { showToast("User deleted locally.", "info"); }
   };
 
-  // --- CURRENT USER AUTH LOGIC ---
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(false); 
-
+  // --- AUTH LOGIC ---
   const login = async (mobile: string) => {
       setIsLoadingUser(true);
       try {
           const response = await sheetApi.loginUser(mobile);
           if (response && response.success && response.user) {
-              setUser(mapToUser(response.user));
-              showToast(`Welcome back, ${response.user.name}!`, 'success');
+              const u = mapToUser(response.user);
+              setUser(u);
+              fetchUserActivity(u.id); // Fetch history
+              showToast(`Welcome back, ${u.name}!`, 'success');
           } else {
               showToast('Mobile number not found.', 'error');
           }
       } catch (e) {
-          console.error(e);
-          // Fallback for demo if script fails
           if (mobile === '9876543210') {
-             setUser(MOCK_USER);
+             const u = MOCK_USER;
+             setUser(u);
+             fetchUserActivity(u.id);
              showToast('Demo Login Successful', 'success');
           } else {
              showToast('Login failed. Check internet.', 'error');
@@ -378,23 +400,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = async () => {
       setUser(null);
+      setJoinedEvents([]);
+      setAcknowledgedNotices([]);
       showToast('Logged out', 'info');
   };
 
   const updateUserProfile = async (u: User) => {
       if (!user) return;
-      // Optimistic Update
       setUser({ ...user, ...u });
-      
       try {
          const volServices = u.volunteerServices ? u.volunteerServices.join(',') : '';
          const row = [u.id, u.name, u.role, u.avatar, u.email, u.phone, u.unit, volServices];
          await sheetApi.updateItem('Profiles', u.id, row);
          showToast('Profile updated in Cloud!', 'success');
-      } catch (e) {
-         console.error("Sheet update failed", e);
-         showToast('Updated locally. Cloud sync failed.', 'info');
-      }
+      } catch (e) { showToast('Updated locally.', 'info'); }
   };
 
   // Nav State
@@ -422,10 +441,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         <UserContext.Provider value={{ user, isLoadingUser, login, logout, updateUser: updateUserProfile }}>
           <DataContext.Provider value={{ 
              events, announcements, settings, loading: loadingData, refreshData,
+             joinedEvents, acknowledgedNotices, joinEvent, acknowledgeNotice,
              addEvent, updateEvent, deleteEvent, 
              addAnnouncement, updateAnnouncement, deleteAnnouncement,
              searchUsers, addUser, editUser, removeUser,
-             updateSetting // Exposed here
+             updateSetting
           }}>
             <NavContext.Provider value={{ navState, nav, goBack }}>
               {children}

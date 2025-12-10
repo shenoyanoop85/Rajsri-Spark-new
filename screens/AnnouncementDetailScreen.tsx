@@ -5,7 +5,7 @@ import { useNav, useData, useToast } from '../context';
 import { Button } from '../components/ui.tsx';
 
 export const AnnouncementDetailScreen: React.FC = () => {
-    const { announcements } = useData();
+    const { announcements, acknowledgedNotices, acknowledgeNotice } = useData();
     const { navState, goBack } = useNav();
     const { showToast } = useToast();
     
@@ -19,6 +19,8 @@ export const AnnouncementDetailScreen: React.FC = () => {
     }, []);
     
     if (!announcement) return null;
+
+    const isAcknowledged = acknowledgedNotices.includes(announcement.id);
 
     const buttonClass = isScrolled 
         ? "bg-white dark:bg-slate-800 text-slate-700 dark:text-white shadow-md" 
@@ -119,10 +121,16 @@ export const AnnouncementDetailScreen: React.FC = () => {
                     <Button 
                         fullWidth 
                         size="lg" 
-                        className="shadow-xl rounded-2xl text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-600 shadow-orange-500/30" 
-                        onClick={() => showToast('Notice Acknowledged', 'info')}
+                        disabled={isAcknowledged}
+                        className={`shadow-xl rounded-2xl text-lg font-bold flex items-center justify-center gap-2 ${isAcknowledged ? 'bg-white border-2 border-orange-500 text-orange-600 shadow-none' : 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-orange-500/30'}`} 
+                        onClick={() => acknowledgeNotice(announcement.id)}
                     >
-                        Acknowledge
+                        {isAcknowledged ? (
+                            <>
+                                <Icons.Check className="w-5 h-5" />
+                                Acknowledged
+                            </>
+                        ) : 'Acknowledge'}
                     </Button>
                 </div>
             </div>
