@@ -260,7 +260,15 @@ export const ImageUpload: React.FC<{
                <label className={`inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-700 dark:text-white cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-all shadow-sm active:scale-95 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
                    <Icons.Camera className="w-4 h-4 text-spark-green" />
                    {value ? 'Change Image' : 'Take / Upload Photo'}
-                   <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={loading} />
+                   {/* Added capture="environment" to prefer rear camera on mobile */}
+                   <input 
+                     type="file" 
+                     accept="image/*" 
+                     capture="environment"
+                     className="hidden" 
+                     onChange={handleFile} 
+                     disabled={loading} 
+                   />
                </label>
                
                {value && (

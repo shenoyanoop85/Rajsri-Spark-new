@@ -37,7 +37,7 @@ export const useToast = () => {
 interface DataContextType {
   events: AppEvent[];
   announcements: Announcement[];
-  allUsers: User[]; // All profiles for Admin
+  settings: Record<string, string>; // NEW: Store app settings like images
   loading: boolean;
   refreshData: () => Promise<void>;
   addEvent: (e: Partial<AppEvent>) => Promise<void>;
@@ -47,9 +47,12 @@ interface DataContextType {
   updateAnnouncement: (a: Announcement) => Promise<void>;
   deleteAnnouncement: (id: string) => Promise<void>;
   // User Management
+  searchUsers: (query: string) => Promise<User[]>; 
   addUser: (u: Partial<User>) => Promise<void>;
   editUser: (u: User) => Promise<void>;
   removeUser: (id: string) => Promise<void>;
+  // Settings Management
+  updateSetting: (key: string, value: string) => Promise<void>;
 }
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -120,7 +123,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- GOOGLE SHEETS DATA LOGIC ---
   const [events, setEvents] = useState<AppEvent[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]); 
+  const [settings, setSettings] = useState<Record<string, string>>({});
   const [loadingData, setLoadingData] = useState(true);
 
   // Helper to map raw sheet row to User object
@@ -139,25 +142,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoadingData(true);
     
     try {
-        const data = await sheetApi.getData();
+        const data = await sheetApi.getPublicData();
         
+        // Events
         if (data.events && Array.isArray(data.events)) setEvents(data.events);
-        else setEvents(MOCK_EVENTS);
+        else setEvents([]);
 
+        // Announcements
         if (data.announcements && Array.isArray(data.announcements)) setAnnouncements(data.announcements);
-        else setAnnouncements(MOCK_ANNOUNCEMENTS);
+        else setAnnouncements([]);
 
-        if (data.profiles && Array.isArray(data.profiles)) {
-            setAllUsers(data.profiles.map(mapToUser));
-        } else {
-             setAllUsers([MOCK_USER]);
+        // Settings (NEW)
+        if (data.settings && Array.isArray(data.settings)) {
+            const settingsMap = data.settings.reduce((acc: any, item: any) => {
+                // Assuming sheet has columns 'key' and 'value'
+                if(item.key) acc[item.key] = item.value;
+                return acc;
+            }, {});
+            setSettings(settingsMap);
         }
 
     } catch (error) {
-        console.warn("Google Sheet fetch failed (or URL not set), using mock data.");
+        console.warn("API Connection Error:", error);
+        showToast("Connection Failed: Using Demo Data", "error");
         setEvents(MOCK_EVENTS);
         setAnnouncements(MOCK_ANNOUNCEMENTS);
-        setAllUsers([MOCK_USER]);
     } finally {
         setLoadingData(false);
     }
@@ -167,6 +176,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     refreshData();
   }, []);
+
+  // --- SETTINGS ACTIONS ---
+  const updateSetting = async (key: string, value: string) => {
+      // Optimistic Update
+      setSettings(prev => ({ ...prev, [key]: value }));
+      
+      try {
+          // If key exists in current settings, update it. If not, add it.
+          // Note: This relies on the local state being accurate.
+          // 'Settings' sheet is expected to have 'key' as the first column (ID).
+          if (settings[key] !== undefined) {
+             await sheetApi.updateItem('Settings', key, [key, value]);
+          } else {
+             await sheetApi.addItem('Settings', [key, value]);
+          }
+          showToast("Setting updated!", "success");
+      } catch (e) {
+          console.error(e);
+          showToast("Failed to save setting to cloud.", "info");
+      }
+  };
 
   // --- EVENT ACTIONS ---
   const addEvent = async (e: Partial<AppEvent>) => {
@@ -257,6 +287,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // --- USER MANAGEMENT ACTIONS (ADMIN) ---
+  const searchUsers = async (query: string): Promise<User[]> => {
+      try {
+          const result = await sheetApi.searchUsers(query);
+          if (result && result.profiles) {
+              return result.profiles.map(mapToUser);
+          }
+          return [];
+      } catch (e) {
+          console.error("Search failed", e);
+          return [];
+      }
+  };
+
   const addUser = async (u: Partial<User>) => {
       try {
           const newUser = { 
@@ -266,8 +309,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               volunteerServices: [] 
           } as User;
           
-          setAllUsers(prev => [...prev, newUser]);
-
           // Map to Sheet Columns: id, name, role, avatar, email, phone, unit, volunteer_services
           const row = [
               newUser.id, newUser.name, newUser.role, newUser.avatar, 
@@ -283,14 +324,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const editUser = async (u: User) => {
       try {
-          setAllUsers(prev => prev.map(user => user.id === u.id ? u : user));
+          // Fix: Ensure we don't wipe volunteer services
+          const volServices = u.volunteerServices ? u.volunteerServices.join(',') : '';
           
           // Map to Sheet Columns (SAME ORDER as addUser)
           const row = [
               u.id, u.name, u.role, u.avatar, 
-              u.email, u.phone, u.unit, ''
+              u.email, u.phone, u.unit, volServices
           ];
-          
           await sheetApi.updateItem('Profiles', u.id, row);
           showToast("User updated in Sheet!", "success");
       } catch (e) {
@@ -300,7 +341,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const removeUser = async (id: string) => {
       try {
-          setAllUsers(prev => prev.filter(u => u.id !== id));
           await sheetApi.deleteItem('Profiles', id);
           showToast("User deleted from Sheet!", "success");
       } catch (e) {
@@ -314,20 +354,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const login = async (mobile: string) => {
       setIsLoadingUser(true);
-      const cleanMobile = mobile.replace(/\D/g, ''); 
-      
-      const foundProfile = allUsers.find(p => {
-          const pMobile = String(p.phone || '').replace(/\D/g, '');
-          return pMobile === cleanMobile;
-      });
-      
-      if (foundProfile) {
-           setUser(foundProfile);
-           showToast(`Welcome back, ${foundProfile.name}!`, 'success');
-      } else {
-          showToast('Mobile number not registered. Contact Admin.', 'error');
+      try {
+          const response = await sheetApi.loginUser(mobile);
+          if (response && response.success && response.user) {
+              setUser(mapToUser(response.user));
+              showToast(`Welcome back, ${response.user.name}!`, 'success');
+          } else {
+              showToast('Mobile number not found.', 'error');
+          }
+      } catch (e) {
+          console.error(e);
+          // Fallback for demo if script fails
+          if (mobile === '9876543210') {
+             setUser(MOCK_USER);
+             showToast('Demo Login Successful', 'success');
+          } else {
+             showToast('Login failed. Check internet.', 'error');
+          }
+      } finally {
+          setIsLoadingUser(false);
       }
-      setIsLoadingUser(false);
   };
 
   const logout = async () => {
@@ -339,10 +385,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!user) return;
       // Optimistic Update
       setUser({ ...user, ...u });
-      setAllUsers(prev => prev.map(p => p.id === u.id ? { ...p, ...u } : p));
       
       try {
-         const row = [u.id, u.name, u.role, u.avatar, u.email, u.phone, u.unit, ''];
+         const volServices = u.volunteerServices ? u.volunteerServices.join(',') : '';
+         const row = [u.id, u.name, u.role, u.avatar, u.email, u.phone, u.unit, volServices];
          await sheetApi.updateItem('Profiles', u.id, row);
          showToast('Profile updated in Cloud!', 'success');
       } catch (e) {
@@ -375,10 +421,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       <ToastContext.Provider value={{ toasts, showToast, removeToast }}>
         <UserContext.Provider value={{ user, isLoadingUser, login, logout, updateUser: updateUserProfile }}>
           <DataContext.Provider value={{ 
-             events, announcements, allUsers, loading: loadingData, refreshData,
+             events, announcements, settings, loading: loadingData, refreshData,
              addEvent, updateEvent, deleteEvent, 
              addAnnouncement, updateAnnouncement, deleteAnnouncement,
-             addUser, editUser, removeUser
+             searchUsers, addUser, editUser, removeUser,
+             updateSetting // Exposed here
           }}>
             <NavContext.Provider value={{ navState, nav, goBack }}>
               {children}

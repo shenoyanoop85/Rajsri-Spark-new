@@ -7,11 +7,14 @@ import { useNav, useData, useUser, useTheme } from '../context';
 export const HomeScreen: React.FC = () => {
   const { nav } = useNav();
   const { user } = useUser();
-  const { events, announcements } = useData();
+  const { events, announcements, settings } = useData();
   const { theme, toggleTheme } = useTheme();
 
   const upcomingEvent = events[0];
   const latestAnnouncement = announcements[0];
+  
+  // Use setting if available, else fallback
+  const heroImage = settings['home_hero_image'] || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop";
 
   const quickAccessItems = [
     { label: 'Volunteer', icon: Icons.Heart, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-slate-800', action: () => nav(MainTab.MORE, SubView.VOLUNTEER) },
@@ -25,12 +28,13 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <div className="pb-8 animate-fade-in relative bg-slate-50 dark:bg-slate-900">
-      {/* Hero Section with Transparent Top Overlay */}
+      {/* Hero Section */}
       <div className="relative h-[38vh] w-full rounded-b-[3rem] overflow-hidden bg-slate-900 shadow-2xl shadow-slate-900/20 z-10">
           <div className="absolute inset-0">
-             <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop" alt="Background" className="w-full h-full object-cover opacity-60" />
-             <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/90 via-slate-900/60 to-slate-900/30 mix-blend-multiply" />
-             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-900/80" />
+             {/* No opacity or blue tint - keeping image natural */}
+             <img src={heroImage} alt="Background" className="w-full h-full object-cover" />
+             {/* Neutral gradient for text readability */}
+             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
           </div>
           
           {/* Custom Header inside Hero */}
@@ -49,7 +53,7 @@ export const HomeScreen: React.FC = () => {
           {/* Welcome Text */}
           <div className="absolute bottom-12 left-0 right-0 px-8 z-20">
               <h1 className="text-3xl font-extrabold text-white leading-tight font-nunito drop-shadow-lg mb-2">Welcome to <br/> Rajsri Spark</h1>
-              <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wide leading-relaxed max-w-[90%] opacity-90">Sports Performance Arts <br/> Recreation and Knowledge</p>
+              <p className="text-xs font-semibold text-white/90 uppercase tracking-wide leading-relaxed max-w-[90%]">Sports Performance Arts <br/> Recreation and Knowledge</p>
           </div>
       </div>
 
