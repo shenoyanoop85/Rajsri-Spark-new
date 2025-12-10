@@ -78,3 +78,12 @@ export interface NavState {
   currentSubView: SubView;
   selectedId?: string; // For details view
 }
+
+// Toast Notification
+export type ToastType = 'success' | 'error' | 'info';
+
+export interface ToastMessage {
+  id: string;
+  message: string;
+  type: ToastType;
+}

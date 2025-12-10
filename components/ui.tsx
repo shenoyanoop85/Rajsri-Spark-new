@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Icons } from '../constants';
+import { ToastMessage } from '../types';
 
 // --- BUTTON ---
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -151,6 +152,61 @@ export const TextArea: React.FC<TextAreaProps> = ({ label, error, className = ''
   );
 };
 
+// --- IMAGE COMPRESSION UTILITY ---
+// Google Sheets cells have a limit of 50,000 characters.
+// We must compress images to fit this limit. 
+export const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        // Max dimensions to ensure base64 string stays under ~32k characters
+        // A 400x400 image at 0.6 quality is usually around 20-30KB
+        const MAX_SIZE = 450;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject('Canvas context missing');
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Initial compression
+        let quality = 0.6;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+        // Recursive reduction if still too large for Google Sheets (Safe margin 45k chars)
+        while (dataUrl.length > 45000 && quality > 0.1) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 // --- IMAGE UPLOAD ---
 export const ImageUpload: React.FC<{
   label: string;
@@ -158,12 +214,21 @@ export const ImageUpload: React.FC<{
   onChange: (val: string) => void;
   error?: string;
 }> = ({ label, value, onChange, error }) => {
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [loading, setLoading] = React.useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
      const file = e.target.files?.[0];
      if (file) {
-       const reader = new FileReader();
-       reader.onloadend = () => onChange(reader.result as string);
-       reader.readAsDataURL(file);
+       setLoading(true);
+       try {
+         const compressedBase64 = await compressImage(file);
+         onChange(compressedBase64);
+       } catch (err) {
+         console.error("Image processing failed", err);
+         alert("Failed to process image. Please try another one.");
+       } finally {
+         setLoading(false);
+       }
      }
   };
 
@@ -173,7 +238,11 @@ export const ImageUpload: React.FC<{
        <div className="flex items-center gap-4">
            {/* Preview Area */}
            <div className={`relative w-24 h-24 rounded-2xl bg-slate-100 dark:bg-slate-900 border ${error ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} overflow-hidden flex-shrink-0 shadow-sm group`}>
-               {value ? (
+               {loading ? (
+                   <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                       <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-spark-green mb-1"></span>
+                   </div>
+               ) : value ? (
                    <>
                      <img src={value} alt="Preview" className="w-full h-full object-cover" />
                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
@@ -188,10 +257,10 @@ export const ImageUpload: React.FC<{
            
            {/* Actions */}
            <div className="flex flex-col items-start gap-2">
-               <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-700 dark:text-white cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-all shadow-sm active:scale-95">
+               <label className={`inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-700 dark:text-white cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-all shadow-sm active:scale-95 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
                    <Icons.Camera className="w-4 h-4 text-spark-green" />
                    {value ? 'Change Image' : 'Take / Upload Photo'}
-                   <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+                   <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={loading} />
                </label>
                
                {value && (
@@ -203,10 +272,47 @@ export const ImageUpload: React.FC<{
                      Remove Image
                    </button>
                )}
-               <p className="text-[10px] text-slate-400 px-1">Supports JPG, PNG</p>
+               <p className="text-[10px] text-slate-400 px-1">Optimized for Sheets Storage</p>
            </div>
        </div>
        {error && <p className="text-xs font-bold text-red-500">{error}</p>}
     </div>
   );
+};
+
+// --- TOAST COMPONENTS ---
+
+export const Toast: React.FC<ToastMessage & { onRemove: (id: string) => void }> = ({ id, message, type, onRemove }) => {
+    // Styles based on type
+    const styles = {
+        success: "border-emerald-500 text-emerald-700 dark:text-emerald-400 bg-white/95 dark:bg-slate-800/95",
+        error: "border-red-500 text-red-700 dark:text-red-400 bg-white/95 dark:bg-slate-800/95",
+        info: "border-blue-500 text-blue-700 dark:text-blue-400 bg-white/95 dark:bg-slate-800/95"
+    };
+
+    const icons = {
+        success: <Icons.Check className="w-5 h-5 text-emerald-500" />,
+        error: <Icons.Shield className="w-5 h-5 text-red-500" />, // Using shield as alert icon substitute
+        info: <Icons.Megaphone className="w-5 h-5 text-blue-500" />
+    };
+
+    return (
+        <div 
+            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md border-l-4 animate-slide-in-top ${styles[type]} min-w-[300px] max-w-sm`}
+            role="alert"
+        >
+            <div className="shrink-0">{icons[type]}</div>
+            <p className="text-sm font-bold flex-1">{message}</p>
+        </div>
+    );
+};
+
+export const ToastContainer: React.FC<{ toasts: ToastMessage[]; onRemove: (id: string) => void }> = ({ toasts, onRemove }) => {
+    return (
+        <div className="fixed top-4 left-0 right-0 z-[100] flex flex-col items-center gap-2 pointer-events-none p-4">
+            {toasts.map(toast => (
+                <Toast key={toast.id} {...toast} onRemove={onRemove} />
+            ))}
+        </div>
+    );
 };

@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../constants';
-import { useNav, useData } from '../context';
+import { useNav, useData, useToast } from '../context';
 import { Button } from '../components/ui.tsx';
 
 export const AnnouncementDetailScreen: React.FC = () => {
     const { announcements } = useData();
     const { navState, goBack } = useNav();
+    const { showToast } = useToast();
     
     const announcement = announcements.find(a => a.id === navState.selectedId);
 
@@ -119,7 +120,7 @@ export const AnnouncementDetailScreen: React.FC = () => {
                         fullWidth 
                         size="lg" 
                         className="shadow-xl rounded-2xl text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-600 shadow-orange-500/30" 
-                        onClick={() => alert('Notice Acknowledged')}
+                        onClick={() => showToast('Notice Acknowledged', 'info')}
                     >
                         Acknowledge
                     </Button>

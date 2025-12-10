@@ -77,7 +77,7 @@ export const MOCK_USER: User = {
   role: 'RESIDENT',
   avatar: 'https://i.pravatar.cc/300?img=11',
   email: 'alex.j@rajsri-spark.com',
-  phone: '+1 (555) 012-3456',
+  phone: '9876543210', // Dummy mobile number
   unit: 'Skyline Tower, Apt 404',
   volunteerServices: []
 };

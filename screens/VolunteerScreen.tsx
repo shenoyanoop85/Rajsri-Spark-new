@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Icons, VOLUNTEER_SERVICES } from '../constants';
-import { useNav, useTheme } from '../context';
+import { useNav, useTheme, useToast } from '../context';
 import { Button } from '../components/ui.tsx';
 import { TopBar } from '../components/Layout';
 
@@ -9,6 +9,7 @@ export const VolunteerScreen: React.FC = () => {
     const [selected, setSelected] = useState<string[]>([]);
     const { goBack } = useNav();
     const { theme, toggleTheme } = useTheme();
+    const { showToast } = useToast();
     
     const toggle = (service: string) => setSelected(prev => prev.includes(service) ? prev.filter(s => s !== service) : [...prev, service]);
 
@@ -33,7 +34,7 @@ export const VolunteerScreen: React.FC = () => {
                         );
                     })}
                 </div>
-                <Button fullWidth onClick={() => alert('Preferences Saved!')}>Save Preferences</Button>
+                <Button fullWidth onClick={() => showToast('Preferences Saved!', 'success')}>Save Preferences</Button>
              </div>
         </div>
     );

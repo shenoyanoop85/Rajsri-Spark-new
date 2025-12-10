@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../constants';
-import { useNav, useData, useTheme } from '../context';
+import { useNav, useData, useTheme, useToast } from '../context';
 import { Button } from '../components/ui.tsx';
 
 export const EventDetailScreen: React.FC = () => {
   const { events } = useData();
   const { navState, goBack } = useNav();
   const { theme } = useTheme();
+  const { showToast } = useToast();
 
   const event = events.find(e => e.id === navState.selectedId);
   
@@ -145,7 +146,7 @@ export const EventDetailScreen: React.FC = () => {
                     size="lg" 
                     disabled={isSoldOut}
                     className={`shadow-xl rounded-2xl text-lg font-bold ${isSoldOut ? 'bg-slate-300 dark:bg-slate-700' : 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-emerald-500/30'}`} 
-                    onClick={() => alert('Successfully Registered!')}
+                    onClick={() => showToast('Successfully Registered! Check email.', 'success')}
                 >
                     {getButtonText()}
                 </Button>
