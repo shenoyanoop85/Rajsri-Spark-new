@@ -47,7 +47,7 @@ export const EventDetailScreen: React.FC = () => {
         </div>
 
         {/* Hero Image */}
-        <div className="relative w-full h-[55vh] rounded-[8vw] overflow-hidden shadow-2xl shadow-emerald-900/20 mb-8">
+        <div className="relative w-full h-[55vh] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-emerald-900/20 mb-8">
              <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
              

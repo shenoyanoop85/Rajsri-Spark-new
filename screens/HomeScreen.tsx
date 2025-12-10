@@ -26,10 +26,21 @@ export const HomeScreen: React.FC = () => {
       quickAccessItems.splice(2, 0, { label: 'Admin', icon: Icons.Settings, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-slate-800', action: () => nav(MainTab.MORE, SubView.ADMIN) });
   }
 
+  // Helper for Date Badge to match FeedCard style
+  const DateBadge = ({ dateStr }: { dateStr: string }) => {
+      const d = new Date(dateStr);
+      return (
+        <div className="absolute top-4 right-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-2.5 text-center min-w-[3.5rem] shadow-lg ring-1 ring-black/5 z-20">
+            <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{d.toLocaleDateString('default', { month: 'short' })}</span>
+            <span className="block text-xl font-extrabold text-slate-800 dark:text-white font-nunito">{d.getDate()}</span>
+        </div>
+      );
+  }
+
   return (
     <div className="pb-8 animate-fade-in relative bg-slate-50 dark:bg-slate-900">
       {/* Hero Section */}
-      <div className="relative h-[38vh] w-full rounded-b-[3rem] overflow-hidden bg-slate-900 shadow-2xl shadow-slate-900/20 z-10">
+      <div className="relative h-[38vh] w-full rounded-b-[2.5rem] overflow-hidden bg-slate-900 shadow-2xl shadow-slate-900/20 z-10">
           <div className="absolute inset-0">
              {/* No opacity or blue tint - keeping image natural */}
              <img src={heroImage} alt="Background" className="w-full h-full object-cover" />
@@ -65,19 +76,29 @@ export const HomeScreen: React.FC = () => {
                 <button onClick={() => nav(MainTab.EVENTS)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">See All</button>
             </div>
             {upcomingEvent ? (
-            <div onClick={() => nav(MainTab.EVENTS)} className="group relative w-full aspect-[16/9] rounded-[4vw] overflow-hidden shadow-xl shadow-slate-200 dark:shadow-slate-900/50 cursor-pointer">
+            <div onClick={() => nav(MainTab.EVENTS)} className="group relative w-full aspect-[16/9] rounded-[2rem] overflow-hidden shadow-xl shadow-slate-200 dark:shadow-slate-900/50 cursor-pointer">
                 <img src={upcomingEvent.imageUrl} alt={upcomingEvent.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
+                
+                {/* Date Badge */}
+                <DateBadge dateStr={upcomingEvent.date} />
+
                 <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                         <span className="px-3 py-1 bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">{upcomingEvent.type}</span>
+                         <span className="px-3 py-1 bg-spark-green/90 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">{upcomingEvent.type}</span>
                          {upcomingEvent.isHighPriority && <span className="px-3 py-1 bg-red-500/80 backdrop-blur-md border border-red-400/30 text-white text-[10px] font-bold rounded-full uppercase tracking-wider animate-pulse shadow-lg shadow-red-500/20">High Priority</span>}
                     </div>
                     <h3 className="text-xl font-bold text-white leading-tight font-nunito mb-1">{upcomingEvent.title}</h3>
-                    <div className="flex items-center gap-2 text-slate-300 text-xs font-medium">
-                        <span>{upcomingEvent.location}</span>
+                    <div className="flex items-center gap-3 text-slate-300 text-xs font-medium">
+                        <div className="flex items-center gap-1">
+                             <Icons.MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                             <span>{upcomingEvent.location}</span>
+                        </div>
                         <span className="w-1 h-1 rounded-full bg-slate-400" />
-                        <span>{new Date(upcomingEvent.date).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-1">
+                             <Icons.Clock className="w-3.5 h-3.5 text-emerald-400" />
+                             <span>{upcomingEvent.time}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -106,13 +127,16 @@ export const HomeScreen: React.FC = () => {
                 <button onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">View Board</button>
             </div>
             {latestAnnouncement && (
-                <div onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="group relative w-full aspect-[16/9] rounded-[4vw] overflow-hidden shadow-xl shadow-slate-200 dark:shadow-slate-900/50 cursor-pointer">
+                <div onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="group relative w-full aspect-[16/9] rounded-[2rem] overflow-hidden shadow-xl shadow-slate-200 dark:shadow-slate-900/50 cursor-pointer">
                     <img src={latestAnnouncement.imageUrl || 'https://picsum.photos/800/400'} alt="Notice" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
                     
+                    {/* Date Badge for Notices too */}
+                    <DateBadge dateStr={latestAnnouncement.date} />
+
                     <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="px-3 py-1 bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">{latestAnnouncement.author}</span>
+                            <span className="px-3 py-1 bg-spark-orange/90 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">{latestAnnouncement.author}</span>
                         </div>
                         <h3 className="text-xl font-bold text-white leading-tight font-nunito mb-1 line-clamp-2">{latestAnnouncement.title}</h3>
                         <p className="text-slate-300 text-xs font-medium line-clamp-1">{latestAnnouncement.content}</p>

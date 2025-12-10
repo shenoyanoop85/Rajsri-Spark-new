@@ -69,7 +69,7 @@ export const FeedCard: React.FC<FeedCardProps> = ({
     return (
         <div 
             onClick={onClick}
-            className="group bg-white dark:bg-slate-800 overflow-hidden cursor-pointer transition-all duration-300 relative w-full h-[65vh] rounded-[8vw] shadow-2xl first:rounded-t-none"
+            className="group bg-white dark:bg-slate-800 overflow-hidden cursor-pointer transition-all duration-300 relative w-full h-[65vh] rounded-[2.5rem] shadow-2xl first:rounded-t-none"
         >
             <div className="relative w-full h-full">
                 {imageUrl ? (

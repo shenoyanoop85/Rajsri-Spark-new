@@ -37,7 +37,7 @@ export const AnnouncementDetailScreen: React.FC = () => {
             </div>
 
             {/* Hero Image */}
-            <div className="relative w-full h-[55vh] rounded-[8vw] overflow-hidden shadow-2xl shadow-orange-900/20 mb-8">
+            <div className="relative w-full h-[55vh] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-orange-900/20 mb-8">
                  {announcement.imageUrl ? (
                     <img src={announcement.imageUrl} alt={announcement.title} className="w-full h-full object-cover" />
                  ) : (
