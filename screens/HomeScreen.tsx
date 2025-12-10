@@ -38,36 +38,34 @@ export const HomeScreen: React.FC = () => {
           </div>
       </div>
 
-      <div className="px-6 space-y-8 mt-8">
+      <div className="space-y-8 mt-8">
         <section>
-            <div className="flex justify-between items-end mb-4 px-2">
+            <div className="flex justify-between items-end mb-4 px-6">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito">Upcoming Events</h3>
                 <button onClick={() => nav(MainTab.EVENTS)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">See All</button>
             </div>
             {upcomingEvent ? (
-            <div onClick={() => nav(MainTab.EVENTS)} className="group relative w-full aspect-[16/9] rounded-[2rem] overflow-hidden shadow-xl shadow-slate-200 dark:shadow-slate-900/50 cursor-pointer">
+            <div onClick={() => nav(MainTab.EVENTS)} className="group relative w-full aspect-[16/9] rounded-[4vw] overflow-hidden shadow-xl shadow-slate-200 dark:shadow-slate-900/50 cursor-pointer">
                 <img src={upcomingEvent.imageUrl} alt={upcomingEvent.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
-                <div className="absolute bottom-0 left-0 right-0 p-5 flex items-end justify-between">
-                    <div>
-                         <h3 className="text-xl font-bold text-white leading-tight font-nunito mb-1">{upcomingEvent.title}</h3>
-                         <div className="flex items-center gap-2 text-slate-300 text-xs font-medium">
-                            <span>{upcomingEvent.location}</span>
-                            <span className="w-1 h-1 rounded-full bg-slate-400" />
-                            <span>{new Date(upcomingEvent.date).toLocaleDateString()}</span>
-                         </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                         {upcomingEvent.isHighPriority && <span className="px-3 py-1 bg-red-500/80 backdrop-blur-md border border-red-400/30 text-white text-[10px] font-bold rounded-full uppercase tracking-wider animate-pulse shadow-lg shadow-red-500/20">High Priority</span>}
+                <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                          <span className="px-3 py-1 bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">{upcomingEvent.type}</span>
+                         {upcomingEvent.isHighPriority && <span className="px-3 py-1 bg-red-500/80 backdrop-blur-md border border-red-400/30 text-white text-[10px] font-bold rounded-full uppercase tracking-wider animate-pulse shadow-lg shadow-red-500/20">High Priority</span>}
+                    </div>
+                    <h3 className="text-xl font-bold text-white leading-tight font-nunito mb-1">{upcomingEvent.title}</h3>
+                    <div className="flex items-center gap-2 text-slate-300 text-xs font-medium">
+                        <span>{upcomingEvent.location}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-400" />
+                        <span>{new Date(upcomingEvent.date).toLocaleDateString()}</span>
                     </div>
                 </div>
             </div>
-            ) : <div className="w-full aspect-[16/9] rounded-[2rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">No Events</div>}
+            ) : <div className="mx-6 aspect-[16/9] rounded-[2rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">No Events</div>}
         </section>
 
-        <section>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito mb-4 px-2">Quick Access</h3>
+        <section className="px-6">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito mb-4">Quick Access</h3>
             <div className="grid grid-cols-4 gap-4">
                  {[
                     { label: 'Volunteer', icon: Icons.Heart, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-slate-800', action: () => nav(MainTab.MORE, SubView.VOLUNTEER) },
@@ -86,19 +84,21 @@ export const HomeScreen: React.FC = () => {
         </section>
 
         <section>
-            <div className="flex justify-between items-end mb-4 px-2">
+            <div className="flex justify-between items-end mb-4 px-6">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito">Latest Notice</h3>
                 <button onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">View Board</button>
             </div>
             {latestAnnouncement && (
-                <div onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="flex bg-white dark:bg-slate-800 p-4 rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-700 gap-4 cursor-pointer">
-                    <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-700 flex-shrink-0 overflow-hidden">
-                        <img src={latestAnnouncement.imageUrl || 'https://picsum.photos/200'} alt="Notice" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1 py-1">
-                        <span className="text-[10px] font-bold text-spark-orange uppercase tracking-wide bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded-full">{latestAnnouncement.author}</span>
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1 line-clamp-1">{latestAnnouncement.title}</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{latestAnnouncement.content}</p>
+                <div onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="group relative w-full aspect-[16/9] rounded-[4vw] overflow-hidden shadow-xl shadow-slate-200 dark:shadow-slate-900/50 cursor-pointer">
+                    <img src={latestAnnouncement.imageUrl || 'https://picsum.photos/800/400'} alt="Notice" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
+                    
+                    <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="px-3 py-1 bg-spark-orange/90 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">{latestAnnouncement.author}</span>
+                        </div>
+                        <h4 className="text-xl font-bold text-white leading-tight font-nunito mb-1 line-clamp-2">{latestAnnouncement.title}</h4>
+                        <p className="text-slate-300 text-xs font-medium line-clamp-1">{latestAnnouncement.content}</p>
                     </div>
                 </div>
             )}
