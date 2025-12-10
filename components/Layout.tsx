@@ -80,9 +80,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
   );
 };
 
-export const ScreenContainer: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className = '' }) => {
+interface ScreenContainerProps { 
+    children: React.ReactNode; 
+    className?: string; 
+    fullWidth?: boolean;
+}
+
+export const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, className = '', fullWidth = false }) => {
+  const paddingClass = fullWidth ? 'px-0 pt-0' : 'px-4 pt-4';
   return (
-    <div className={`pb-24 px-4 pt-4 max-w-md mx-auto w-full min-h-screen ${className}`}>
+    <div className={`pb-24 ${paddingClass} max-w-md mx-auto w-full min-h-screen ${className}`}>
       {children}
     </div>
   );

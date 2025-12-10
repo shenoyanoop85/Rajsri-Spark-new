@@ -7,179 +7,220 @@ import { Header, BottomNav, ScreenContainer } from './components/Layout';
 import { Button, Card, Input, TextArea } from './components/ui.tsx';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
+// --- HELPER COMPONENTS ---
+
+const ImageUpload: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ label, value, onChange }) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const file = e.target.files?.[0];
+     if (file) {
+       const reader = new FileReader();
+       reader.onloadend = () => onChange(reader.result as string);
+       reader.readAsDataURL(file);
+     }
+  };
+
+  return (
+    <div className="space-y-2">
+       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
+       <div className="flex items-center gap-4">
+           {/* Preview Area */}
+           <div className="relative w-24 h-24 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden flex-shrink-0 shadow-sm group">
+               {value ? (
+                   <>
+                     <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+                   </>
+               ) : (
+                   <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                       <Icons.Camera className="w-6 h-6 mb-1" />
+                       <span className="text-[9px] font-bold uppercase">No Image</span>
+                   </div>
+               )}
+           </div>
+           
+           {/* Actions */}
+           <div className="flex flex-col items-start gap-2">
+               <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-700 dark:text-white cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-all shadow-sm active:scale-95">
+                   <Icons.Camera className="w-4 h-4 text-spark-green" />
+                   {value ? 'Change Image' : 'Take / Upload Photo'}
+                   <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+               </label>
+               
+               {value && (
+                   <button 
+                     type="button" 
+                     onClick={() => onChange('')}
+                     className="text-xs font-bold text-red-500 hover:text-red-600 px-2"
+                   >
+                     Remove Image
+                   </button>
+               )}
+               <p className="text-[10px] text-slate-400 px-1">Supports JPG, PNG</p>
+           </div>
+       </div>
+    </div>
+  );
+};
+
 // --- SCREENS ---
 
-// 1. HOME SCREEN (Redesigned with Dashboard Title in Body)
+// 1. HOME SCREEN (Redesigned with Curved Header & Overlap Layout)
 const HomeScreen: React.FC<{ 
   nav: (tab: MainTab, sub?: SubView) => void,
   upcomingEvent: Event,
   latestAnnouncement: Announcement,
-  user: User
-}> = ({ nav, upcomingEvent, latestAnnouncement, user }) => {
+  user: User,
+  theme: Theme,
+  toggleTheme: () => void
+}> = ({ nav, upcomingEvent, latestAnnouncement, user, theme, toggleTheme }) => {
   return (
-    <div className="space-y-8 animate-fade-in pb-8">
-      {/* 1. Dashboard Title & Weather Widget */}
-      <div className="flex justify-between items-center mb-6 pt-1">
-        <div>
-            <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white leading-tight font-nunito">Dashboard</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Overview</p>
-        </div>
+    <div className="pb-8 animate-fade-in relative bg-slate-50 dark:bg-slate-900">
+      
+      {/* --- HERO SECTION (Curved) --- */}
+      <div className="relative h-[38vh] w-full rounded-b-[3rem] overflow-hidden bg-slate-900 shadow-2xl shadow-slate-900/20 z-10">
+          {/* Background Image */}
+          <div className="absolute inset-0">
+             <img 
+               src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1000&auto=format&fit=crop" 
+               alt="Background" 
+               className="w-full h-full object-cover opacity-60"
+             />
+             <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/90 via-slate-900/60 to-slate-900/30 mix-blend-multiply" />
+             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-900/80" />
+          </div>
 
-        <div className="flex flex-col items-end">
-            <div className="bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 rounded-2xl px-3 py-2 flex items-center gap-2">
-                <Icons.Sun className="w-5 h-5 text-amber-400 fill-amber-400" />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">28°C</span>
-            </div>
-            <span className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-wider">Skyline Tower</span>
-        </div>
+          {/* Top Navbar (Inside Hero) */}
+          <div className="absolute top-0 left-0 right-0 p-6 pt-4 flex justify-between items-center z-20">
+              {/* User Avatar (Top Left) */}
+              <button onClick={() => nav(MainTab.HOME, SubView.PROFILE)} className="group relative">
+                  <div className="w-12 h-12 rounded-full border-2 border-white/30 p-0.5 bg-white/10 backdrop-blur-sm">
+                      <img src={user.avatar} alt="User" className="w-full h-full rounded-full object-cover" />
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-slate-900 rounded-full"></div>
+              </button>
+
+              {/* Theme Toggle (Top Right) */}
+              <button 
+                onClick={toggleTheme} 
+                className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all border border-white/10"
+              >
+                 {theme === 'light' ? <Icons.Moon className="w-5 h-5" /> : <Icons.Sun className="w-5 h-5" />}
+              </button>
+          </div>
+
+          {/* Hero Content */}
+          <div className="absolute bottom-12 left-0 right-0 px-8 z-20">
+              <h1 className="text-3xl font-extrabold text-white leading-tight font-nunito drop-shadow-lg mb-2">
+                  Welcome to <br/> Rajsri Spark
+              </h1>
+              <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wide leading-relaxed max-w-[90%] opacity-90">
+                  Sports Performance Arts <br/> Recreation and Knowledge
+              </p>
+          </div>
       </div>
 
-      {/* 2. Hero: Featured Event */}
-      <section>
-        <div className="flex justify-between items-end mb-4">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito">Happening Soon</h3>
-            <button onClick={() => nav(MainTab.EVENTS)} className="text-xs font-bold text-spark-green hover:text-spark-darkGreen transition-colors">View All</button>
-        </div>
-        <div 
-            onClick={() => nav(MainTab.EVENTS)}
-            className="group relative w-full aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl shadow-emerald-900/10 dark:shadow-emerald-900/20 cursor-pointer"
-        >
-            <img 
-                src={upcomingEvent.imageUrl} 
-                alt={upcomingEvent.title} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent opacity-80" />
-            
-            {/* Floating Date Badge */}
-            <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-2xl p-3 text-center min-w-[3.5rem] shadow-lg">
-                <span className="block text-[10px] font-bold uppercase tracking-wider opacity-90">{new Date(upcomingEvent.date).toLocaleString('default', { month: 'short' })}</span>
-                <span className="block text-xl font-extrabold font-nunito">{new Date(upcomingEvent.date).getDate()}</span>
+      {/* --- CONTENT SECTION --- */}
+      <div className="px-6 space-y-8 mt-8">
+        
+        {/* Happening Soon */}
+        <section>
+            <div className="flex justify-between items-end mb-4 px-2">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito">Upcoming Events</h3>
+                <button onClick={() => nav(MainTab.EVENTS)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">See All</button>
             </div>
+            {upcomingEvent ? (
+            <div 
+                onClick={() => nav(MainTab.EVENTS)}
+                className="group relative w-full aspect-[16/9] rounded-[2rem] overflow-hidden shadow-xl shadow-slate-200 dark:shadow-slate-900/50 cursor-pointer"
+            >
+                <img 
+                    src={upcomingEvent.imageUrl} 
+                    alt={upcomingEvent.title} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
+                
+                <div className="absolute bottom-0 left-0 right-0 p-5 flex items-end justify-between">
+                    <div>
+                         <h3 className="text-xl font-bold text-white leading-tight font-nunito mb-1">{upcomingEvent.title}</h3>
+                         <div className="flex items-center gap-2 text-slate-300 text-xs font-medium">
+                            <span>{upcomingEvent.location}</span>
+                            <span className="w-1 h-1 rounded-full bg-slate-400" />
+                            <span>{new Date(upcomingEvent.date).toLocaleDateString()}</span>
+                         </div>
+                    </div>
+                    {/* Badges instead of Tickets button */}
+                    <div className="flex flex-col items-end gap-2">
+                         {upcomingEvent.isHighPriority && (
+                            <span className="px-3 py-1 bg-red-500/80 backdrop-blur-md border border-red-400/30 text-white text-[10px] font-bold rounded-full uppercase tracking-wider animate-pulse shadow-lg shadow-red-500/20">
+                                High Priority
+                            </span>
+                         )}
+                         <span className="px-3 py-1 bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shadow-sm">
+                            {upcomingEvent.type}
+                         </span>
+                    </div>
+                </div>
+            </div>
+            ) : (
+                <div className="w-full aspect-[16/9] rounded-[2rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">No Events</div>
+            )}
+        </section>
 
-            {/* Content Content */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
-                 <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-0.5 bg-spark-green text-white text-[10px] font-bold rounded-lg shadow-sm">
-                        {upcomingEvent.type}
-                    </span>
-                    {upcomingEvent.isHighPriority && (
-                        <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-lg shadow-sm animate-pulse">
-                            HIGH PRIORITY
+        {/* Quick Actions (Visual Refresh) */}
+        <section>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito mb-4 px-2">Quick Access</h3>
+            <div className="grid grid-cols-4 gap-4">
+                 {[
+                    { label: 'Volunteer', icon: Icons.Heart, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-slate-800', action: () => nav(MainTab.MORE, SubView.VOLUNTEER) },
+                    { label: 'Emergency', icon: Icons.Phone, color: 'text-red-500', bg: 'bg-red-50 dark:bg-slate-800', action: () => nav(MainTab.EMERGENCY) },
+                    { label: 'Admin', icon: Icons.Settings, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-slate-800', action: () => nav(MainTab.MORE, SubView.ADMIN) },
+                    { label: 'Notices', icon: Icons.Megaphone, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-slate-800', action: () => nav(MainTab.HOME, SubView.ANNOUNCEMENTS) },
+                 ].map((item, i) => (
+                    <button key={i} onClick={item.action} className="flex flex-col items-center gap-2 group">
+                        <div className={`w-14 h-14 rounded-2xl ${item.bg} flex items-center justify-center ${item.color} shadow-sm border border-slate-100 dark:border-slate-700/50 group-hover:scale-105 transition-transform duration-300`}>
+                            <item.icon className="w-6 h-6" />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{item.label}</span>
+                    </button>
+                 ))}
+            </div>
+        </section>
+
+        {/* Notice Board */}
+        <section>
+            <div className="flex justify-between items-end mb-4 px-2">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito">Latest Notice</h3>
+                <button onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">View Board</button>
+            </div>
+            {latestAnnouncement && (
+                <div 
+                    onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)}
+                    className="flex bg-white dark:bg-slate-800 p-4 rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-700 gap-4 cursor-pointer"
+                >
+                    <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-700 flex-shrink-0 overflow-hidden">
+                        <img 
+                            src={latestAnnouncement.imageUrl || 'https://picsum.photos/200'} 
+                            alt="Notice" 
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    <div className="flex-1 py-1">
+                        <span className="text-[10px] font-bold text-spark-orange uppercase tracking-wide bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded-full">
+                            {latestAnnouncement.author}
                         </span>
-                    )}
-                 </div>
-                 <h3 className="text-2xl font-bold text-white leading-tight mb-3 font-nunito drop-shadow-md">{upcomingEvent.title}</h3>
-                 <div className="flex items-center text-slate-100 text-sm font-medium gap-4">
-                    <span className="flex items-center gap-1.5"><Icons.Clock className="w-4 h-4 text-emerald-400"/> {upcomingEvent.time}</span>
-                    <span className="flex items-center gap-1.5"><Icons.MapPin className="w-4 h-4 text-emerald-400"/> {upcomingEvent.location}</span>
-                 </div>
-            </div>
-        </div>
-      </section>
-
-      {/* 3. Quick Actions */}
-      <section>
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 font-nunito">Quick Actions</h3>
-        <div className="grid grid-cols-4 gap-3">
-            {/* Volunteer */}
-            <button onClick={() => nav(MainTab.MORE, SubView.VOLUNTEER)} className="flex flex-col items-center gap-2 group">
-                <div className="w-16 h-16 rounded-[1.2rem] bg-orange-50 dark:bg-slate-800 flex items-center justify-center text-spark-orange shadow-sm border border-orange-100 dark:border-slate-700 group-hover:scale-110 group-hover:border-orange-200 transition-all duration-300">
-                    <Icons.Heart className="w-7 h-7" />
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1 line-clamp-1">{latestAnnouncement.title}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{latestAnnouncement.content}</p>
+                    </div>
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 text-center tracking-tight">Volunteer</span>
-            </button>
+            )}
+        </section>
 
-             {/* Emergency */}
-             <button onClick={() => nav(MainTab.EMERGENCY)} className="flex flex-col items-center gap-2 group">
-                <div className="w-16 h-16 rounded-[1.2rem] bg-red-50 dark:bg-slate-800 flex items-center justify-center text-red-500 shadow-sm border border-red-100 dark:border-slate-700 group-hover:scale-110 group-hover:border-red-200 transition-all duration-300">
-                    <Icons.Phone className="w-7 h-7" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 text-center tracking-tight">Emergency</span>
-            </button>
-
-            {/* Admin */}
-            <button onClick={() => nav(MainTab.MORE, SubView.ADMIN)} className="flex flex-col items-center gap-2 group">
-                <div className="w-16 h-16 rounded-[1.2rem] bg-indigo-50 dark:bg-slate-800 flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100 dark:border-slate-700 group-hover:scale-110 group-hover:border-indigo-200 transition-all duration-300">
-                    <Icons.Settings className="w-7 h-7" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 text-center tracking-tight">Admin</span>
-            </button>
-
-            {/* Notices (Replacing More) */}
-            <button onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="flex flex-col items-center gap-2 group">
-                <div className="w-16 h-16 rounded-[1.2rem] bg-blue-50 dark:bg-slate-800 flex items-center justify-center text-blue-500 shadow-sm border border-blue-100 dark:border-slate-700 group-hover:scale-110 group-hover:border-blue-200 transition-all duration-300">
-                    <Icons.Megaphone className="w-7 h-7" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 text-center tracking-tight">Notices</span>
-            </button>
-        </div>
-      </section>
-
-      {/* 4. Latest Announcement Banner - Redesigned to match Hero Card */}
-      <section>
-        <div className="flex justify-between items-end mb-4">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white font-nunito">Notice Board</h3>
-            <button onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)} className="text-xs font-bold text-spark-orange hover:text-orange-600 transition-colors">View All</button>
-        </div>
-        <div 
-            onClick={() => nav(MainTab.HOME, SubView.ANNOUNCEMENTS)}
-            className="group relative w-full aspect-[16/9] rounded-[2rem] overflow-hidden shadow-2xl shadow-orange-900/10 dark:shadow-orange-900/20 cursor-pointer"
-        >
-             {/* Image */}
-            <img 
-                src={latestAnnouncement.imageUrl || 'https://images.unsplash.com/photo-1605218457332-dd602d5df02d?q=80&w=800&auto=format&fit=crop'} 
-                alt={latestAnnouncement.title} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            
-            {/* Gradient Overlay - Warm/Dark for Announcements */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent opacity-90" />
-            
-            {/* Author Badge - Moved to Top Left for cleaner stunning look */}
-            <div className="absolute top-4 left-4">
-                 <span className="px-3 py-1.5 bg-spark-orange/90 backdrop-blur-md text-white text-[10px] font-bold rounded-full shadow-lg border border-white/20 uppercase tracking-wide">
-                    {latestAnnouncement.author}
-                </span>
-            </div>
-
-            {/* Date Badge - Updated to consistent Hero Style */}
-            <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-2xl p-3 text-center min-w-[3.5rem] shadow-lg">
-                <span className="block text-[10px] font-bold uppercase tracking-wider opacity-90">{new Date(latestAnnouncement.date).toLocaleString('default', { month: 'short' })}</span>
-                <span className="block text-xl font-extrabold font-nunito">{new Date(latestAnnouncement.date).getDate()}</span>
-            </div>
-
-            {/* Content Content */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
-                 <h3 className="text-xl font-bold text-white leading-tight mb-2 font-nunito drop-shadow-md">{latestAnnouncement.title}</h3>
-                 <p className="text-slate-200 text-sm line-clamp-2 leading-relaxed opacity-90 mb-3">
-                    {latestAnnouncement.content}
-                 </p>
-                 
-                 {/* Footer - Updated to consistent Hero Style */}
-                 <div className="flex items-center text-slate-100 text-sm font-medium gap-4">
-                    {(latestAnnouncement.validFrom && latestAnnouncement.validTo) ? (
-                        <>
-                           <span className="flex items-center gap-1.5">
-                               <Icons.Calendar className="w-4 h-4 text-orange-400"/> 
-                               {new Date(latestAnnouncement.validFrom).toLocaleDateString(undefined, {month:'short', day:'numeric'})} - {new Date(latestAnnouncement.validTo).toLocaleDateString(undefined, {month:'short', day:'numeric'})}
-                           </span>
-                           {latestAnnouncement.eta && (
-                               <span className="flex items-center gap-1.5">
-                                   <Icons.Clock className="w-4 h-4 text-orange-400"/> {latestAnnouncement.eta}
-                               </span>
-                           )}
-                        </>
-                    ) : (
-                        <span className="flex items-center gap-1.5">
-                            <Icons.Calendar className="w-4 h-4 text-orange-400"/> Published {new Date(latestAnnouncement.date).toLocaleDateString()}
-                        </span>
-                    )}
-                 </div>
-            </div>
-        </div>
-      </section>
+      </div>
     </div>
   )
 }
@@ -683,84 +724,344 @@ const VolunteerScreen: React.FC = () => {
     );
 };
 
-// 7. ADMIN SCREEN
-const AdminScreen: React.FC<{ onCreateEvent: (e: Event) => void, onCreateAnnouncement: (a: Announcement) => void }> = ({ onCreateEvent, onCreateAnnouncement }) => {
+// 7. ADMIN SCREEN (Completely Overhauled)
+interface AdminScreenProps { 
+  events: Event[];
+  announcements: Announcement[];
+  onCreateEvent: (e: Event) => void;
+  onUpdateEvent: (e: Event) => void;
+  onCreateAnnouncement: (a: Announcement) => void; 
+  onUpdateAnnouncement: (a: Announcement) => void;
+  onDeleteEvent: (id: string) => void;
+  onDeleteAnnouncement: (id: string) => void;
+}
+
+const AdminScreen: React.FC<AdminScreenProps> = ({ 
+    events, announcements, 
+    onCreateEvent, onUpdateEvent, 
+    onCreateAnnouncement, onUpdateAnnouncement,
+    onDeleteEvent, onDeleteAnnouncement
+}) => {
     const [activeTab, setActiveTab] = useState<'EVENT' | 'ANNOUNCE'>('EVENT');
-    
-    // Simple Chart Data
-    const data = [
-      { name: 'Jan', events: 4 },
-      { name: 'Feb', events: 3 },
-      { name: 'Mar', events: 6 },
-      { name: 'Apr', events: 2 },
-    ];
+    const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+    const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+
+    // Custom type to allow string input for array fields during editing
+    type EventFormState = Omit<Partial<Event>, 'requirements' | 'benefits'> & {
+        requirements?: string | string[];
+        benefits?: string | string[];
+    };
+
+    // Initial Empty States
+    const emptyEvent: EventFormState = {
+        title: '', date: '', time: '', location: '', imageUrl: '', 
+        description: '', type: 'General', isHighPriority: false, 
+        requirements: [], benefits: [], capacity: 0
+    };
+    const emptyAnnouncement: Partial<Announcement> = {
+        title: '', content: '', author: '', imageUrl: '', validFrom: '', validTo: ''
+    };
+
+    const [eventForm, setEventForm] = useState<EventFormState>(emptyEvent);
+    const [announceForm, setAnnounceForm] = useState(emptyAnnouncement);
+
+    // Helpers
+    const formatDateForInput = (isoDate: string) => {
+        if (!isoDate) return '';
+        const d = new Date(isoDate);
+        return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    };
+
+    const handleEditEvent = (evt: Event) => {
+        setEditingEvent(evt);
+        setEventForm({
+            ...evt,
+            date: formatDateForInput(evt.date)
+        });
+    };
+
+    const handleEditAnnouncement = (ann: Announcement) => {
+        setEditingAnnouncement(ann);
+        setAnnounceForm({
+            ...ann,
+            date: formatDateForInput(ann.date),
+            validFrom: ann.validFrom ? formatDateForInput(ann.validFrom) : '',
+            validTo: ann.validTo ? formatDateForInput(ann.validTo) : ''
+        });
+    };
 
     const handleEventSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const form = e.target as HTMLFormElement;
-        const title = (form.elements.namedItem('title') as HTMLInputElement).value;
-        const date = (form.elements.namedItem('date') as HTMLInputElement).value;
-        const newEvent: Event = {
-            id: `new_${Date.now()}`,
-            title,
-            date,
-            time: 'TBD',
-            location: 'Community Center',
-            imageUrl: 'https://picsum.photos/800/600',
-            description: 'New community event.',
-            type: 'GENERAL',
-            isHighPriority: false,
-            requirements: [],
-            benefits: [],
-            capacity: 100,
-            registeredCount: 0
+        const payload: Event = {
+            id: editingEvent ? editingEvent.id : `new_${Date.now()}`,
+            title: eventForm.title || 'Untitled Event',
+            date: eventForm.date ? new Date(eventForm.date).toISOString() : new Date().toISOString(),
+            time: eventForm.time || 'TBD',
+            location: eventForm.location || 'Community Center',
+            imageUrl: eventForm.imageUrl || 'https://picsum.photos/800/600',
+            description: eventForm.description || '',
+            type: eventForm.type || 'General',
+            isHighPriority: eventForm.isHighPriority || false,
+            requirements: typeof eventForm.requirements === 'string' 
+                ? (eventForm.requirements as string).split(',').map(s => s.trim()).filter(Boolean)
+                : eventForm.requirements || [],
+            benefits: typeof eventForm.benefits === 'string' 
+                ? (eventForm.benefits as string).split(',').map(s => s.trim()).filter(Boolean)
+                : eventForm.benefits || [],
+            capacity: Number(eventForm.capacity) || 0,
+            registeredCount: editingEvent ? editingEvent.registeredCount : 0
         };
-        onCreateEvent(newEvent);
-        alert('Event Created!');
-        form.reset();
+
+        if (editingEvent) {
+            onUpdateEvent(payload);
+            alert('Event Updated!');
+        } else {
+            onCreateEvent(payload);
+            alert('Event Created!');
+        }
+        setEditingEvent(null);
+        setEventForm(emptyEvent);
+    };
+
+    const handleAnnounceSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const payload: Announcement = {
+            id: editingAnnouncement ? editingAnnouncement.id : `new_ann_${Date.now()}`,
+            title: announceForm.title || 'Untitled',
+            content: announceForm.content || '',
+            author: announceForm.author || 'Admin',
+            date: new Date().toISOString(), // Always update publish date on edit? Or keep original? Let's keep original if edit.
+            imageUrl: announceForm.imageUrl,
+            validFrom: announceForm.validFrom ? new Date(announceForm.validFrom).toISOString() : undefined,
+            validTo: announceForm.validTo ? new Date(announceForm.validTo).toISOString() : undefined
+        };
+        
+        if (editingAnnouncement) {
+             // Keep original date if strictly editing content
+             payload.date = editingAnnouncement.date;
+             onUpdateAnnouncement(payload);
+             alert('Announcement Updated!');
+        } else {
+             onCreateAnnouncement(payload);
+             alert('Announcement Posted!');
+        }
+        setEditingAnnouncement(null);
+        setAnnounceForm(emptyAnnouncement);
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
-             {/* Stats Chart */}
-             <Card className="p-4">
-                 <h3 className="font-bold text-slate-800 dark:text-white mb-4 text-sm">Event Frequency (2024)</h3>
-                 <div className="h-40 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data}>
-                            <XAxis dataKey="name" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
-                            <Tooltip 
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                cursor={{fill: 'transparent'}}
-                            />
-                            <Bar dataKey="events" fill="#10B981" radius={[4, 4, 0, 0]} barSize={20} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                 </div>
-             </Card>
-
+        <div className="space-y-6 animate-fade-in pb-12">
              {/* Tab Switcher */}
-             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                 <button onClick={() => setActiveTab('EVENT')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'EVENT' ? 'bg-white dark:bg-slate-700 shadow-sm text-spark-green' : 'text-slate-500'}`}>Create Event</button>
-                 <button onClick={() => setActiveTab('ANNOUNCE')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'ANNOUNCE' ? 'bg-white dark:bg-slate-700 shadow-sm text-spark-orange' : 'text-slate-500'}`}>Post Announcement</button>
+             <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
+                 <button onClick={() => setActiveTab('EVENT')} className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${activeTab === 'EVENT' ? 'bg-white dark:bg-slate-700 shadow-sm text-spark-green' : 'text-slate-500 hover:text-slate-600'}`}>Manage Events</button>
+                 <button onClick={() => setActiveTab('ANNOUNCE')} className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${activeTab === 'ANNOUNCE' ? 'bg-white dark:bg-slate-700 shadow-sm text-spark-orange' : 'text-slate-500 hover:text-slate-600'}`}>Manage Notices</button>
+             </div>
+
+             {/* HEADER: Manage Existing / Create New Toggle */}
+             <div className="flex items-center justify-between">
+                 <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+                     {activeTab === 'EVENT' 
+                        ? (editingEvent ? 'Editing Event' : 'Create New Event') 
+                        : (editingAnnouncement ? 'Editing Notice' : 'Create New Notice')
+                     }
+                 </h3>
+                 {(editingEvent || editingAnnouncement) && (
+                     <button 
+                        onClick={() => {
+                            setEditingEvent(null);
+                            setEditingAnnouncement(null);
+                            setEventForm(emptyEvent);
+                            setAnnounceForm(emptyAnnouncement);
+                        }}
+                        className="text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                     >
+                         + Create New
+                     </button>
+                 )}
+             </div>
+
+             {/* HORIZONTAL LIST: Select to Edit */}
+             <div className="overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 flex gap-3">
+                 {activeTab === 'EVENT' ? events.map(ev => (
+                     <div 
+                        key={ev.id} 
+                        onClick={() => handleEditEvent(ev)}
+                        className={`min-w-[160px] p-3 rounded-xl border cursor-pointer transition-all ${editingEvent?.id === ev.id ? 'bg-emerald-50 border-spark-green ring-1 ring-spark-green' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-emerald-300'}`}
+                     >
+                         <p className="text-xs font-bold text-slate-400 mb-1">{new Date(ev.date).toLocaleDateString()}</p>
+                         <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ev.title}</p>
+                         <p className="text-[10px] text-slate-500">{ev.type}</p>
+                     </div>
+                 )) : announcements.map(ann => (
+                     <div 
+                        key={ann.id} 
+                        onClick={() => handleEditAnnouncement(ann)}
+                        className={`min-w-[160px] p-3 rounded-xl border cursor-pointer transition-all ${editingAnnouncement?.id === ann.id ? 'bg-orange-50 border-spark-orange ring-1 ring-spark-orange' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}
+                     >
+                         <p className="text-xs font-bold text-slate-400 mb-1">{new Date(ann.date).toLocaleDateString()}</p>
+                         <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ann.title}</p>
+                         <p className="text-[10px] text-slate-500">{ann.author}</p>
+                     </div>
+                 ))}
              </div>
 
              {activeTab === 'EVENT' ? (
-                 <form onSubmit={handleEventSubmit} className="space-y-4">
-                     <Input name="title" label="Event Title" placeholder="e.g., Summer Pool Party" required />
-                     <Input name="date" type="datetime-local" label="Date & Time" required />
-                     <TextArea label="Description" placeholder="Event details..." rows={3} />
-                     <div className="flex items-center gap-2">
-                        <input type="checkbox" id="priority" className="w-4 h-4 text-spark-green rounded focus:ring-spark-green"/>
-                        <label htmlFor="priority" className="text-sm text-slate-700 dark:text-slate-300">Mark as High Priority</label>
+                 <form onSubmit={handleEventSubmit} className="space-y-4 bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm">
+                     <Input 
+                        label="Event Title" 
+                        value={eventForm.title} 
+                        onChange={e => setEventForm({...eventForm, title: e.target.value})} 
+                        required 
+                     />
+                     
+                     <div className="grid grid-cols-2 gap-4">
+                         <Input 
+                            type="datetime-local" 
+                            label="Date & Start Time" 
+                            value={eventForm.date} 
+                            onChange={e => setEventForm({...eventForm, date: e.target.value})} 
+                            required 
+                         />
+                         <Input 
+                            label="Time Display (e.g. 6-10 PM)" 
+                            value={eventForm.time} 
+                            onChange={e => setEventForm({...eventForm, time: e.target.value})} 
+                         />
                      </div>
-                     <Button type="submit" fullWidth>Create Event</Button>
+
+                     <div className="grid grid-cols-2 gap-4">
+                         <Input 
+                            label="Location" 
+                            value={eventForm.location} 
+                            onChange={e => setEventForm({...eventForm, location: e.target.value})} 
+                         />
+                         <Input 
+                            label="Capacity" 
+                            type="number"
+                            value={eventForm.capacity} 
+                            onChange={e => setEventForm({...eventForm, capacity: Number(e.target.value)})} 
+                         />
+                     </div>
+
+                     <ImageUpload 
+                        label="Event Image" 
+                        value={eventForm.imageUrl || ''} 
+                        onChange={url => setEventForm({...eventForm, imageUrl: url})} 
+                     />
+                     
+                     <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1">
+                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Event Type</label>
+                             <select 
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-spark-green"
+                                value={eventForm.type}
+                                onChange={e => setEventForm({...eventForm, type: e.target.value})}
+                             >
+                                 <option value="General">General</option>
+                                 <option value="Cultural">Cultural</option>
+                                 <option value="Workshop">Workshop</option>
+                                 <option value="Drive">Drive</option>
+                                 <option value="Sports">Sports</option>
+                                 <option value="Meeting">Meeting</option>
+                             </select>
+                         </div>
+                         <div className="flex items-end pb-3">
+                             <div className="flex items-center gap-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="priority" 
+                                    className="w-5 h-5 text-spark-green rounded focus:ring-spark-green"
+                                    checked={eventForm.isHighPriority}
+                                    onChange={e => setEventForm({...eventForm, isHighPriority: e.target.checked})}
+                                />
+                                <label htmlFor="priority" className="text-sm font-bold text-slate-700 dark:text-slate-300">High Priority</label>
+                             </div>
+                         </div>
+                     </div>
+
+                     <TextArea 
+                        label="Description" 
+                        rows={3} 
+                        value={eventForm.description} 
+                        onChange={e => setEventForm({...eventForm, description: e.target.value})} 
+                     />
+                     
+                     <TextArea 
+                        label="Requirements (comma separated)" 
+                        placeholder="Ticket Required, Traditional Wear..."
+                        rows={2} 
+                        value={Array.isArray(eventForm.requirements) ? eventForm.requirements.join(', ') : eventForm.requirements} 
+                        onChange={e => setEventForm({...eventForm, requirements: e.target.value})} 
+                     />
+
+                     <TextArea 
+                        label="Benefits (comma separated)" 
+                        placeholder="Dinner Included, Live Music..."
+                        rows={2} 
+                        value={Array.isArray(eventForm.benefits) ? eventForm.benefits.join(', ') : eventForm.benefits} 
+                        onChange={e => setEventForm({...eventForm, benefits: e.target.value})} 
+                     />
+
+                     <div className="flex gap-3 pt-2">
+                         {editingEvent && (
+                             <Button type="button" variant="danger" onClick={() => { if(confirm('Delete event?')) { onDeleteEvent(editingEvent.id); setEditingEvent(null); setEventForm(emptyEvent); } }}>
+                                 Delete
+                             </Button>
+                         )}
+                         <Button type="submit" fullWidth>{editingEvent ? 'Update Event' : 'Create Event'}</Button>
+                     </div>
                  </form>
              ) : (
-                 <form onSubmit={(e) => { e.preventDefault(); alert('Announcement Sent!'); }} className="space-y-4">
-                     <Input label="Title" placeholder="e.g., Water Shutoff" />
-                     <TextArea label="Content" placeholder="Details..." rows={4} />
-                     <Button variant="secondary" type="submit" fullWidth>Send Announcement</Button>
+                 <form onSubmit={handleAnnounceSubmit} className="space-y-4 bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm">
+                     <Input 
+                        label="Title" 
+                        value={announceForm.title}
+                        onChange={e => setAnnounceForm({...announceForm, title: e.target.value})}
+                        required 
+                     />
+                     <Input 
+                        label="Author" 
+                        placeholder="e.g. HOA Board"
+                        value={announceForm.author}
+                        onChange={e => setAnnounceForm({...announceForm, author: e.target.value})}
+                     />
+                     
+                     <ImageUpload 
+                        label="Cover Image" 
+                        value={announceForm.imageUrl || ''} 
+                        onChange={url => setAnnounceForm({...announceForm, imageUrl: url})} 
+                     />
+                     
+                     <div className="grid grid-cols-2 gap-4">
+                        <Input 
+                            type="datetime-local" 
+                            label="Valid From" 
+                            value={announceForm.validFrom}
+                            onChange={e => setAnnounceForm({...announceForm, validFrom: e.target.value})}
+                        />
+                        <Input 
+                            type="datetime-local" 
+                            label="Valid Until" 
+                            value={announceForm.validTo}
+                            onChange={e => setAnnounceForm({...announceForm, validTo: e.target.value})}
+                        />
+                     </div>
+
+                     <TextArea 
+                        label="Content" 
+                        rows={6} 
+                        value={announceForm.content}
+                        onChange={e => setAnnounceForm({...announceForm, content: e.target.value})}
+                     />
+
+                     <div className="flex gap-3 pt-2">
+                        {editingAnnouncement && (
+                             <Button type="button" variant="danger" onClick={() => { if(confirm('Delete notice?')) { onDeleteAnnouncement(editingAnnouncement.id); setEditingAnnouncement(null); setAnnounceForm(emptyAnnouncement); } }}>
+                                 Delete
+                             </Button>
+                         )}
+                        <Button variant="secondary" type="submit" fullWidth>{editingAnnouncement ? 'Update Notice' : 'Post Notice'}</Button>
+                     </div>
                  </form>
              )}
         </div>
@@ -981,6 +1282,22 @@ export default function App() {
       // Ideally call API here
   };
 
+  // ADMIN ACTIONS
+  const handleEventUpdate = (updatedEvent: Event) => {
+      setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e));
+  };
+  const handleEventDelete = (id: string) => {
+      setEvents(prev => prev.filter(e => e.id !== id));
+  };
+
+  const handleAnnouncementUpdate = (updatedAnn: Announcement) => {
+      setAnnouncements(prev => prev.map(a => a.id === updatedAnn.id ? updatedAnn : a));
+  };
+  const handleAnnouncementDelete = (id: string) => {
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+  };
+
+
   // Render Content based on state
   const renderContent = () => {
     // 1. Overlay Views (Full Screen feel)
@@ -1001,15 +1318,28 @@ export default function App() {
     }
     if (navState.currentSubView === SubView.ADMIN) {
         return <AdminScreen 
+            events={events}
+            announcements={announcements}
             onCreateEvent={(e) => setEvents(prev => [e, ...prev])} 
+            onUpdateEvent={handleEventUpdate}
+            onDeleteEvent={handleEventDelete}
             onCreateAnnouncement={(a) => setAnnouncements(prev => [a, ...prev])} 
+            onUpdateAnnouncement={handleAnnouncementUpdate}
+            onDeleteAnnouncement={handleAnnouncementDelete}
         />;
     }
 
     // 2. Tab Views
     switch (navState.currentTab) {
       case MainTab.HOME:
-        return <HomeScreen nav={handleNav} upcomingEvent={events[0]} latestAnnouncement={announcements[0]} user={currentUser} />;
+        return <HomeScreen 
+            nav={handleNav} 
+            upcomingEvent={events[0]} 
+            latestAnnouncement={announcements[0]} 
+            user={currentUser} 
+            theme={theme}
+            toggleTheme={toggleTheme}
+        />;
       case MainTab.EVENTS:
         return <EventsScreen events={events} onSelect={handleEventSelect} />;
       case MainTab.EMERGENCY:
@@ -1060,7 +1390,11 @@ export default function App() {
   // Calculate Header Title & Custom Content
   let title = "Rajsri SPARK";
   let showBack = false;
+  let onBackHandler = handleBack;
   let headerCustomTitle: React.ReactNode | undefined;
+  
+  // Logic to hide header on Dashboard
+  const isDashboard = navState.currentTab === MainTab.HOME && navState.currentSubView === SubView.NONE;
 
   if (navState.currentSubView !== SubView.NONE) {
     showBack = true;
@@ -1073,29 +1407,14 @@ export default function App() {
         case SubView.ADMIN: title = "Admin Panel"; break;
     }
   } else {
+    // Handle Main Tabs Back Navigation (to Home)
+    if (navState.currentTab !== MainTab.HOME) {
+        showBack = true;
+        onBackHandler = () => handleNav(MainTab.HOME);
+    }
     switch(navState.currentTab) {
         case MainTab.HOME:
-            // Custom Profile in Header for Home Screen
-            headerCustomTitle = (
-                <div 
-                    className="flex items-center gap-3 cursor-pointer group hover:bg-slate-50 dark:hover:bg-slate-800/50 py-1 px-2 -ml-2 rounded-xl transition-colors"
-                    onClick={() => handleNav(MainTab.HOME, SubView.PROFILE)}
-                >
-                    <div className="relative">
-                        <div className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 p-0.5 bg-white dark:bg-slate-800">
-                            <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full rounded-full object-cover" />
-                        </div>
-                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-spark-green border-2 border-white dark:border-slate-800 rounded-full"></div>
-                    </div>
-                    <div>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider leading-none mb-0.5">Good Morning</p>
-                        <h2 className="text-sm font-extrabold text-slate-800 dark:text-white leading-none group-hover:text-spark-green transition-colors">
-                            {currentUser.name.split(' ')[0]}
-                        </h2>
-                    </div>
-                </div>
-            );
-            title = ""; // Ignored
+            title = ""; // Ignored as header is hidden
             break;
         case MainTab.EVENTS: title = "Community Events"; break;
         case MainTab.EMERGENCY: title = "Emergency Directory"; break;
@@ -1105,16 +1424,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
-      <Header 
-        title={title} 
-        theme={theme} 
-        toggleTheme={toggleTheme} 
-        showBack={showBack}
-        onBack={handleBack}
-        customTitle={headerCustomTitle}
-      />
+      {!isDashboard && (
+          <Header 
+            title={title} 
+            theme={theme} 
+            toggleTheme={toggleTheme} 
+            showBack={showBack}
+            onBack={onBackHandler}
+            customTitle={headerCustomTitle}
+          />
+      )}
       
-      <ScreenContainer>
+      <ScreenContainer fullWidth={isDashboard}>
          {renderContent()}
       </ScreenContainer>
       
