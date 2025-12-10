@@ -23,6 +23,9 @@ const MainAppContent: React.FC = () => {
         navState.currentSubView === SubView.ANNOUNCEMENT_DETAIL ||
         navState.currentSubView === SubView.PROFILE;
 
+    // Show BottomNav only when we are on the root of a tab (no subview active)
+    const showBottomNav = navState.currentSubView === SubView.NONE;
+
     const renderContent = () => {
         if (navState.currentSubView !== SubView.NONE) {
             switch (navState.currentSubView) {
@@ -48,10 +51,12 @@ const MainAppContent: React.FC = () => {
              <ScreenContainer fullWidth={isImmersive}>
                  {renderContent()}
              </ScreenContainer>
-             <BottomNav 
-                activeTab={navState.currentTab} 
-                onTabChange={(tab) => nav(tab)} 
-             />
+             {showBottomNav && (
+                 <BottomNav 
+                    activeTab={navState.currentTab} 
+                    onTabChange={(tab) => nav(tab)} 
+                 />
+             )}
         </div>
     );
 };

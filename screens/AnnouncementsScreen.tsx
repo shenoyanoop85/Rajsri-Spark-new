@@ -49,7 +49,7 @@ export const AnnouncementsScreen: React.FC = () => {
                         </FeedCard>
 
                         {/* Transparent Spacer Div matching EventsScreen */}
-                        {index < announcements.length - 1 && <div className="w-full h-1 bg-transparent" />}
+                        {index < announcements.length - 1 && <div className="w-full h-2 bg-transparent" />}
                     </React.Fragment>
                 );
             })}
